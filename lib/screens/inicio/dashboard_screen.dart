@@ -7,6 +7,7 @@ import 'package:DELLALIO/screens/login/meu_usuario_screen.dart';
 import 'package:DELLALIO/screens/mensagens/mensagens.dart';
 import 'package:DELLALIO/screens/orcamentos/menageorcamentos.dart';
 import 'package:DELLALIO/screens/tarefas/tarefas_screen.dart';
+import 'package:auto_updater/auto_updater.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -133,7 +134,16 @@ class DashboardContent extends StatelessWidget {
     String? photoUrl = user?.photoURL;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("PAINEL DELLALIO")),
+      appBar: AppBar(
+        title: const Text("PAINEL DELLALIO"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.system_update),
+            tooltip: 'Buscar atualizações',
+            onPressed: () => _checkForUpdates(context),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -354,6 +364,30 @@ class DashboardContent extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// Dispara a verificação manual de atualizações via auto_updater (WinSparkle).
+  Future<void> _checkForUpdates(BuildContext context) async {
+    try {
+      await autoUpdater.checkForUpdates();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verificando atualizações...'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao verificar atualizações: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildPriorityProjectsList() {
