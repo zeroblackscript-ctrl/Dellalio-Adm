@@ -21,6 +21,7 @@ class MensagensScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid;
+    final isAdmin = UserSession.isAdmin();
 
     return Scaffold(
       appBar: AppBar(title: const Text("Conversas")),
@@ -29,35 +30,54 @@ class MensagensScreen extends StatelessWidget {
         child: const Icon(Icons.add),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: myUid != null
-            ? FirebaseFirestore.instance
-                .collection('chats')
-                .where('participants', arrayContains: myUid)
-                .orderBy('lastMessageAt', descending: true)
-                .snapshots()
-            : null,
+        stream: _buildChatStream(myUid, isAdmin),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return _buildFallbackFilteredByParticipant(context, myUid);
+            return _buildFallbackFilteredByParticipant(context, myUid, isAdmin);
           }
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-          final docs = _filterValidChats(snapshot.data!.docs, myUid);
+          final docs = _filterValidChats(snapshot.data!.docs, myUid, isAdmin);
           return _buildList(context, docs, myUid);
         },
       ),
     );
   }
 
-  /// Filtra apenas os chats onde o [myUid] está realmente presente no campo
-  /// `participants`. Isso é uma camada extra de segurança para o caso de
-  /// existirem documentos no banco com o campo `participants` inconsistente
-  /// ou nulo, garantindo que conversas de outros usuários não sejam expostas.
+  /// Retorna a stream de chats adequada:
+  /// - Admin: TODOS os chats do sistema, ordenados por lastMessageAt
+  /// - Usuário comum: apenas chats onde é participante
+  Stream<QuerySnapshot>? _buildChatStream(String? myUid, bool isAdmin) {
+    if (myUid == null && !isAdmin) return null;
+
+    if (isAdmin) {
+      // Admin vê todas as conversas do sistema
+      return FirebaseFirestore.instance
+          .collection('chats')
+          .orderBy('lastMessageAt', descending: true)
+          .snapshots();
+    }
+
+    // Usuário comum vê apenas suas conversas
+    return FirebaseFirestore.instance
+        .collection('chats')
+        .where('participants', arrayContains: myUid)
+        .orderBy('lastMessageAt', descending: true)
+        .snapshots();
+  }
+
+  /// Filtra os chats:
+  /// - Admin: vê todos os chats (sem filtro de participants)
+  /// - Usuário comum: apenas chats onde [myUid] está nos participants
   List<QueryDocumentSnapshot> _filterValidChats(
     List<QueryDocumentSnapshot> docs,
     String? myUid,
+    bool isAdmin,
   ) {
+    // Admin vê tudo
+    if (isAdmin) return docs;
+
     if (myUid == null) return [];
     return docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>?;
@@ -71,20 +91,22 @@ class MensagensScreen extends StatelessWidget {
   // Fallback SEGURO: ainda filtra por participants (arrayContains), apenas
   // sem o orderBy, evitando expor conversas de outros usuários caso o
   // índice composto não exista.
-  Widget _buildFallbackFilteredByParticipant(BuildContext context, String? myUid) {
-    if (myUid == null) {
+  Widget _buildFallbackFilteredByParticipant(BuildContext context, String? myUid, bool isAdmin) {
+    if (myUid == null && !isAdmin) {
       return const Center(child: Text("Nenhuma conversa ainda."));
     }
     return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('chats')
-          .where('participants', arrayContains: myUid)
-          .snapshots(),
+      stream: isAdmin
+          ? FirebaseFirestore.instance.collection('chats').snapshots()
+          : FirebaseFirestore.instance
+              .collection('chats')
+              .where('participants', arrayContains: myUid)
+              .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final docs = _filterValidChats(snapshot.data!.docs, myUid);
+        final docs = _filterValidChats(snapshot.data!.docs, myUid, isAdmin);
         docs.sort((a, b) {
           final aData = a.data() as Map<String, dynamic>;
           final bData = b.data() as Map<String, dynamic>;
