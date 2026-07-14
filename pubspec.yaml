@@ -1,0 +1,51 @@
+name: DELLALIO
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  cloud_firestore: ^6.4.1
+  shared_preferences: ^2.5.5
+  firebase_storage: ^13.4.1
+  file_picker: ^11.0.2
+  intl: ^0.20.2
+  image_picker: ^1.2.2
+  url_launcher: ^6.3.2
+  firebase_auth: ^6.5.2
+  mask_text_input_formatter: ^2.9.0
+  flutter_launcher_icons: ^0.14.4
+  cached_network_image: ^3.4.1
+  table_calendar: ^3.2.0
+  intl_translation: ^0.21.0
+  http: ^1.6.0
+  currency_text_input_formatter: ^2.3.0
+  pdf: ^3.12.0
+  printing: ^5.15.0
+  local_notifier: ^0.1.6
+  rxdart: ^0.28.0
+  auto_updater: ^1.0.0
+
+
+flutter_launcher_icons:
+  image_path: "assets/imagens/logo/logo ld.png"
+  windows:
+    generate: true
+    image_path: "assets/imagens/logo/logo ld.png"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/imagens/logo/logo ld.png
+    - assets/imagens/banner/banner_topo.png

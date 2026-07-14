@@ -1,0 +1,39 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "dellalio-moveis-planejados",
+          "appId": "1:867463529801:android:30b67ad343d6ad70eb8698",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "dellalio-moveis-planejados",
+          "configurations": {
+            "android": "1:867463529801:android:30b67ad343d6ad70eb8698",
+            "ios": "1:867463529801:ios:d8cc1ca7442c345feb8698",
+            "macos": "1:867463529801:ios:d8cc1ca7442c345feb8698",
+            "web": "1:867463529801:web:0f09f31d6e613b7deb8698",
+            "windows": "1:867463529801:web:c8411a90db45a9bceb8698"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

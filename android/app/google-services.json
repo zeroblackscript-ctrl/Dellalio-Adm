@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "867463529801",
+    "project_id": "dellalio-moveis-planejados",
+    "storage_bucket": "dellalio-moveis-planejados.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867463529801:android:e1bbc3a9c236ece4eb8698",
+        "android_client_info": {
+          "package_name": "com.example.cerebro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxy5hOlTCWsdgbsU3on_1jxOb_ddbewXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867463529801:android:30b67ad343d6ad70eb8698",
+        "android_client_info": {
+          "package_name": "com.example.cerebro_adm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxy5hOlTCWsdgbsU3on_1jxOb_ddbewXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:867463529801:android:908d5372adf58396eb8698",
+        "android_client_info": {
+          "package_name": "com.example.dellalio_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxy5hOlTCWsdgbsU3on_1jxOb_ddbewXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
