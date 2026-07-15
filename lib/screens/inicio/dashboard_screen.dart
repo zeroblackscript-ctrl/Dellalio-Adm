@@ -12,6 +12,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
+import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -158,35 +159,33 @@ class DashboardContent extends StatelessWidget {
                   final data = snapshot.data!.data() as Map<String, dynamic>;
                   displayNome = data['nome'] ?? "Usuário";
                 }
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 25,
-                            backgroundColor: Colors.grey[300],
-                            backgroundImage: photoUrl != null
-                                ? NetworkImage(photoUrl)
-                                : null,
-                            child: photoUrl == null
-                                ? const Icon(Icons.person, size: 30)
-                                : null,
-                          ),
-                          const SizedBox(width: 10),
-                          Text("Bem-vindo, $displayNome".toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold)),
-                        ],
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      // Avatar + Nome
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundColor: Colors.grey[300],
+                        backgroundImage: photoUrl != null
+                            ? NetworkImage(photoUrl)
+                            : null,
+                        child: photoUrl == null
+                            ? const Icon(Icons.person, size: 30)
+                            : null,
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Text("Bem-vindo, $displayNome".toUpperCase(),
+                          style: const TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 );
               },
             ),
             _buildKPISection(),
+            // Seção de próximos compromissos em destaque
+            _buildProximosCompromissosDestaque(user?.uid),
             const Padding(
               padding: EdgeInsets.all(16.0),
               child: Text("PRIORIDADES DO DIA",
@@ -390,12 +389,202 @@ class DashboardContent extends StatelessWidget {
     }
   }
 
+  /// Widget de próximos compromissos em destaque na dashboard
+  Widget _buildProximosCompromissosDestaque(String? userId) {
+    if (userId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('agenda')
+          .where('date',
+              isGreaterThanOrEqualTo:
+                  Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 1))))
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final now = DateTime.now();
+        final proximos = snapshot.data!.docs.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          final date = (data['date'] as Timestamp).toDate();
+          final docUserId = data['userId'] ?? '';
+          return date.isAfter(now.subtract(const Duration(hours: 1))) &&
+              (docUserId == userId || docUserId.toString().isEmpty);
+        }).toList();
+
+        if (proximos.isEmpty) return const SizedBox.shrink();
+
+        // Ordena por data
+        proximos.sort((a, b) {
+          final da = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
+          final db = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
+          return da.toDate().compareTo(db.toDate());
+        });
+
+        // Pega até 5 próximos compromissos
+        final exibidos = proximos.take(5).toList();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Card(
+            elevation: 2,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.event_note,
+                          color: Color.fromARGB(255, 98, 80, 63), size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        "PRÓXIMOS COMPROMISSOS",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Color.fromARGB(255, 98, 80, 63),
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => onNavigate(7),
+                        child: const Text("Ver agenda",
+                            style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  ...exibidos.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final date = (data['date'] as Timestamp).toDate();
+                    final text = data['text'] ?? '';
+                    final time = data['time'] ?? '';
+                    final int importancia = data['importancia'] ?? 0;
+                    final String userName =
+                        (data['userName'] ?? '?').toString().toUpperCase();
+                    final Color userColor = Color(
+                      int.tryParse(data['userColor']
+                                  ?.toString()
+                                  .replaceFirst('#', '0xff') ??
+                              '0xffE53935') ??
+                          0xffE53935,
+                    );
+
+                    final Color impColor = importancia >= 3
+                        ? Colors.red
+                        : importancia >= 2
+                            ? Colors.orange
+                            : const Color.fromARGB(255, 98, 80, 63);
+
+                    final String dataFormatada =
+                        DateFormat('dd/MM').format(date);
+                    final String horaStr =
+                        time.isNotEmpty ? ' às $time' : '';
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: InkWell(
+                        onTap: () => onNavigate(7),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: impColor.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border(
+                              left: BorderSide(
+                                  color: impColor.withValues(alpha: 0.5),
+                                  width: 3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: userColor,
+                                child: Text(
+                                  userName.isNotEmpty
+                                      ? userName[0].toUpperCase()
+                                      : '?',
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      text.isNotEmpty
+                                          ? text
+                                          : 'Sem título',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '$dataFormatada$horaStr',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (importancia >= 2)
+                                Icon(
+                                  Icons.flag,
+                                  size: 16,
+                                  color: impColor,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  if (proximos.length > 5)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Center(
+                        child: Text(
+                          '+ ${proximos.length - 5} compromisso(s) a mais',
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey[500]),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildPriorityProjectsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('clients').snapshots(),
       builder: (context, clientSnapshot) {
-        if (!clientSnapshot.hasData)
+        if (!clientSnapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
 
         final clientDocs = clientSnapshot.data!.docs;
         final List<Stream<List<Map<String, dynamic>>>> projectStreams =
@@ -405,7 +594,7 @@ class DashboardContent extends StatelessWidget {
               .where('status', isNotEqualTo: 'finalizado')
               .snapshots()
               .map((snap) => snap.docs.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
+                    final data = doc.data();
                     data['clientName'] =
                         (clientDoc.data() as Map<String, dynamic>)['name']
                                 ?.toString()
@@ -418,8 +607,9 @@ class DashboardContent extends StatelessWidget {
         return StreamBuilder<List<List<Map<String, dynamic>>>>(
           stream: Rx.combineLatestList(projectStreams),
           builder: (context, projectSnapshot) {
-            if (!projectSnapshot.hasData)
+            if (!projectSnapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
+            }
 
             final allProjects =
                 projectSnapshot.data!.expand((i) => i).toList();

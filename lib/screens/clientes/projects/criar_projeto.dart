@@ -444,7 +444,9 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         inputFormatters: formatters,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        validator: (v) => v == null || v.isEmpty ? "Campo obrigatório" : null,
+        validator: label.toUpperCase().contains('OBSERVAÇÕES') || label.toUpperCase().contains('OBSERVACOES')
+            ? null
+            : (v) => v == null || v.isEmpty ? "Campo obrigatório" : null,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
