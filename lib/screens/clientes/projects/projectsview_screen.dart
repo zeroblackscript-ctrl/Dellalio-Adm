@@ -98,14 +98,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           .delete();
 
       if (mounted) {
+        final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Projeto excluído com sucesso!')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.pop(context);
+        messenger.showSnackBar(
           SnackBar(content: Text('Erro ao excluir projeto: $e')),
         );
       }

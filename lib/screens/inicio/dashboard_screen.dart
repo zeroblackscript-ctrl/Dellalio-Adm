@@ -409,9 +409,7 @@ class DashboardContent extends StatelessWidget {
         final proximos = snapshot.data!.docs.where((doc) {
           final data = doc.data() as Map<String, dynamic>;
           final date = (data['date'] as Timestamp).toDate();
-          final docUserId = data['userId'] ?? '';
-          return date.isAfter(now.subtract(const Duration(hours: 1))) &&
-              (docUserId == userId || docUserId.toString().isEmpty);
+          return date.isAfter(now.subtract(const Duration(hours: 1)));
         }).toList();
 
         if (proximos.isEmpty) return const SizedBox.shrink();
