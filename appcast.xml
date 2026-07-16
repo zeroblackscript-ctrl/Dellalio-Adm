@@ -11,16 +11,16 @@
         - Dashboard agora mostra todos os compromissos da agenda
         - Melhorias gerais
       </description>
-      <pubDate>Tue, 15 Jul 2026 20:50:00 -0300</pubDate>
+      <pubDate>Tue, 15 Jul 2026 21:05:00 -0300</pubDate>
       <sparkle:version>1.0.2.3</sparkle:version>
       <sparkle:shortVersionString>1.0.2</sparkle:shortVersionString>
       <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.0.2</sparkle:releaseNotesLink>
       <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.0.2/DellalioCerebroADM_Setup_v1.0.2.exe"
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.0.2/DellalioCerebroADM_v1.0.2.zip"
         sparkle:version="1.0.2.3"
         sparkle:shortVersionString="1.0.2"
-        length="43256633"
+        length="50579260"
         type="application/octet-stream" />
     </item>
     <item>
