@@ -12,7 +12,7 @@ import 'firebase_options.dart';
 /// Aponta para o arquivo appcast.xml hospedado no GitHub Releases.
 /// O AppCast segue o protocolo Sparkle (WinSparkle no Windows).
 /// Para desabilitar a verificação de updates, deixe como string vazia.
-const String kUpdateFeedUrl = 'https://raw.githubusercontent.com/zeroblackscript-ctrl/Dellalio-Adm/master/appcast.xml';
+const String kUpdateFeedUrl = 'https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/latest/download/appcast.xml';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
