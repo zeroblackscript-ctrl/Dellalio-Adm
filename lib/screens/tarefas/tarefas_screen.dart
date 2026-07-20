@@ -586,7 +586,13 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
               if (isParaTodos)
                 const Text("Atribuído para: Todos")
               else
-                Text("Atribuído para: ${data['assignedTo'] ?? '—'}"),
+                FutureBuilder<Person?>(
+                  future: _getSenderPerson(data['assignedTo']?.toString()),
+                  builder: (context, snap) {
+                    final name = snap.data?.fullName ?? data['assignedTo'] ?? '—';
+                    return Text("Atribuído para: $name");
+                  },
+                ),
               Text("Criado por: ${data['createdByName'] ?? '—'}"),
               if (criadoEm.isNotEmpty) Text("Criado em: $criadoEm"),
             ],

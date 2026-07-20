@@ -5,6 +5,25 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.1.0</title>
+      <description>
+        - Adicionado suporte a múltiplos PDFs e fotos em projetos
+        - Correção de bugs na tela de tarefas
+        - Correções e melhorias gerais
+      </description>
+      <pubDate>Mon, 20 Jul 2026 20:00:00 -0300</pubDate>
+      <sparkle:version>1.1.0.4</sparkle:version>
+      <sparkle:shortVersionString>1.1.0</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.1.0</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.1.0/DellalioCerebroADM_Setup_v1.1.0.exe"
+        sparkle:version="1.1.0.4"
+        sparkle:shortVersionString="1.1.0"
+        length="43280175"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.0.2</title>
       <description>
         - Correção: exclusão de projeto não causa mais tela vermelha

@@ -99,36 +99,42 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       type: type == 'pdf' ? FileType.custom : FileType.image,
       allowedExtensions: type == 'pdf' ? ['pdf'] : null,
       withData: true,
+      allowMultiple: true, // Permite selecionar múltiplos arquivos
     );
 
-    if (result == null || result.files.first.bytes == null) return;
+    if (result == null || result.files.isEmpty) return;
 
     setState(() => _isLoading = true);
-    final String fileName = result.files.first.name;
 
-    try {
-      final bytes = result.files.first.bytes!;
-      final ref = FirebaseStorage.instance.ref().child(
-            '${type}s/${DateTime.now().millisecondsSinceEpoch}_$fileName',
-          );
-      await ref.putData(bytes);
-      final url = await ref.getDownloadURL();
+    for (var file in result.files) {
+      if (file.bytes == null) continue;
 
-      // Adiciona na lista local correspondente sem salvar no Firestore ainda
-      setState(() {
-        if (type == 'pdf') {
-          _files.add({'name': fileName, 'url': url});
-        } else {
-          _galleryUrls.add(url);
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao subir arquivo: $e')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+      final String fileName = file.name;
+
+      try {
+        final bytes = file.bytes!;
+        final ref = FirebaseStorage.instance.ref().child(
+              '${type}s/${DateTime.now().millisecondsSinceEpoch}_$fileName',
+            );
+        await ref.putData(bytes);
+        final url = await ref.getDownloadURL();
+
+        // Adiciona na lista local correspondente sem salvar no Firestore ainda
+        setState(() {
+          if (type == 'pdf') {
+            _files.add({'name': fileName, 'url': url});
+          } else {
+            _galleryUrls.add(url);
+          }
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao subir arquivo: $e')),
+        );
+      }
     }
+
+    setState(() => _isLoading = false);
   }
 
   // --- Remoção de Arquivo Local e do Storage ---
@@ -153,7 +159,6 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
   // --- Criação do Projeto e Atualização do Cliente via Batch ---
   Future<void> _saveNewProject() async {
-    if (!_formKey.currentState!.validate()) return;
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
@@ -444,9 +449,7 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
         inputFormatters: formatters,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        validator: label.toUpperCase().contains('OBSERVAÇÕES') || label.toUpperCase().contains('OBSERVACOES')
-            ? null
-            : (v) => v == null || v.isEmpty ? "Campo obrigatório" : null,
+        validator: null, // Nenhum campo é obrigatório
         decoration: InputDecoration(
           labelText: label,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),

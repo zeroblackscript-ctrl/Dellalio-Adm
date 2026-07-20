@@ -15,6 +15,9 @@ import '../login/login_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 
+/// Versão atual do aplicativo (extraída do pubspec.yaml)
+const String kAppVersion = '1.1.0';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -175,9 +178,18 @@ class DashboardContent extends StatelessWidget {
                             : null,
                       ),
                       const SizedBox(width: 10),
-                      Text("Bem-vindo, $displayNome".toUpperCase(),
-                          style: const TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold)),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Bem-vindo, $displayNome".toUpperCase(),
+                              style: const TextStyle(
+                                  fontSize: 22, fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 2),
+                          Text("v$kAppVersion",
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey[500])),
+                        ],
+                      ),
                     ],
                   ),
                 );

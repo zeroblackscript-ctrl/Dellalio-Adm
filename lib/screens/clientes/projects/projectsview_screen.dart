@@ -153,6 +153,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   body: Center(child: CircularProgressIndicator()));
             }
 
+            // Se o projeto foi excluído, volta para a tela anterior
+            if (!projectSnap.data!.exists) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              });
+              return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()));
+            }
+
             final clientData =
                 clientSnap.data!.data() as Map<String, dynamic>;
             final projectData =
