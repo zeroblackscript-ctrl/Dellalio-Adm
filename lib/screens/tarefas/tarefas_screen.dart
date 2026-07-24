@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:DELLALIO/core/people_service.dart';
+import '../../core/theme.dart';
 import '../../core/user_session.dart';
-
-/// Status da tarefa:
-/// 0 = Não Lido
-/// 1 = Lido (automático ao abrir a tarefa)
-/// 2 = Em Processo
-/// 3 = Finalizado
 
 class TarefasAdminScreen extends StatefulWidget {
   const TarefasAdminScreen({super.key});
@@ -33,7 +31,6 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     super.dispose();
   }
 
-  /// Verifica se o usuário atual é o destinatário da tarefa
   bool _isRecipient(Map<String, dynamic> data) {
     if (data['assignedTo'] == _currentUid) return true;
     if (data['paraTodos'] == true) {
@@ -45,120 +42,51 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
 
   Future<void> _deleteTask(String taskId, Map<String, dynamic> data) async {
     WriteBatch batch = FirebaseFirestore.instance.batch();
-
     DocumentReference taskRef = FirebaseFirestore.instance.collection('tasks').doc(taskId);
     batch.delete(taskRef);
 
-    // Se for tarefa "para todos", remove de todas as subcoleções
     if (data['paraTodos'] == true) {
       final all = data['assignedToAll'];
       if (all is List) {
         for (final uid in all) {
-          // Tenta remover de funcionarios
-          batch.delete(
-            FirebaseFirestore.instance
-                .collection('funcionarios')
-                .doc(uid.toString())
-                .collection('tarefas')
-                .doc(taskId),
-          );
-          // Tenta remover de users também
-          batch.delete(
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(uid.toString())
-                .collection('tarefas')
-                .doc(taskId),
-          );
+          batch.delete(FirebaseFirestore.instance.collection('funcionarios').doc(uid.toString()).collection('tarefas').doc(taskId));
+          batch.delete(FirebaseFirestore.instance.collection('users').doc(uid.toString()).collection('tarefas').doc(taskId));
         }
       }
     } else {
-      // Tarefa individual
       final String? funcId = data['assignedTo']?.toString();
       if (funcId != null) {
-        batch.delete(
-          FirebaseFirestore.instance
-              .collection('funcionarios')
-              .doc(funcId)
-              .collection('tarefas')
-              .doc(taskId),
-        );
-        batch.delete(
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(funcId)
-              .collection('tarefas')
-              .doc(taskId),
-        );
+        batch.delete(FirebaseFirestore.instance.collection('funcionarios').doc(funcId).collection('tarefas').doc(taskId));
+        batch.delete(FirebaseFirestore.instance.collection('users').doc(funcId).collection('tarefas').doc(taskId));
       }
     }
-
     await batch.commit();
   }
 
   Future<void> _updateTaskStatus(String taskId, Map<String, dynamic> data, int newStatus) async {
     WriteBatch batch = FirebaseFirestore.instance.batch();
-
     DocumentReference taskRef = FirebaseFirestore.instance.collection('tasks').doc(taskId);
     batch.update(taskRef, {'status': newStatus});
 
-    // Se for tarefa "para todos", atualiza em todas as subcoleções
     if (data['paraTodos'] == true) {
       final all = data['assignedToAll'];
       if (all is List) {
         for (final uid in all) {
           final uidStr = uid.toString();
-          batch.set(
-            FirebaseFirestore.instance
-                .collection('funcionarios')
-                .doc(uidStr)
-                .collection('tarefas')
-                .doc(taskId),
-            {'status': newStatus},
-            SetOptions(merge: true),
-          );
-          batch.set(
-            FirebaseFirestore.instance
-                .collection('users')
-                .doc(uidStr)
-                .collection('tarefas')
-                .doc(taskId),
-            {'status': newStatus},
-            SetOptions(merge: true),
-          );
+          batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(uidStr).collection('tarefas').doc(taskId), {'status': newStatus}, SetOptions(merge: true));
+          batch.set(FirebaseFirestore.instance.collection('users').doc(uidStr).collection('tarefas').doc(taskId), {'status': newStatus}, SetOptions(merge: true));
         }
       }
     } else {
       final String? funcId = data['assignedTo']?.toString();
       if (funcId != null) {
-        batch.set(
-          FirebaseFirestore.instance
-              .collection('funcionarios')
-              .doc(funcId)
-              .collection('tarefas')
-              .doc(taskId),
-          {'status': newStatus},
-          SetOptions(merge: true),
-        );
-        batch.set(
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(funcId)
-              .collection('tarefas')
-              .doc(taskId),
-          {'status': newStatus},
-          SetOptions(merge: true),
-        );
+        batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(funcId).collection('tarefas').doc(taskId), {'status': newStatus}, SetOptions(merge: true));
+        batch.set(FirebaseFirestore.instance.collection('users').doc(funcId).collection('tarefas').doc(taskId), {'status': newStatus}, SetOptions(merge: true));
       }
     }
-
     await batch.commit();
   }
 
-  // Dialog para criar nova tarefa.
-  // Se [criarParaTodos] estiver marcado, cria UM único documento na coleção
-  // 'tasks' (com flag paraTodos e array assignedToAll), mas replica nas
-  // subcoleções de cada pessoa para que todos possam ver.
   Future<void> _showCreateTaskDialog() async {
     TextEditingController titleCtrl = TextEditingController();
     TextEditingController obsCtrl = TextEditingController();
@@ -167,169 +95,151 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     String selectedUrgencia = "Baixa";
     bool criarParaTodos = false;
     final List<String> urgenciaOptions = ["Baixa", "Média", "Alta"];
-
     final List<Person> pessoas = await PeopleService.fetchAllPeople();
-
+    final List<File> selectedMedia = [];
     if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, dialogSetState) => AlertDialog(
-          title: const Text("Nova Tarefa"),
+          backgroundColor: DellalioTheme.darkSurface,
+          title: const Text("NOVA TAREFA", style: TextStyle(color: Colors.white)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Título da Tarefa")),
-              TextField(controller: obsCtrl, decoration: const InputDecoration(labelText: "Observações"), maxLines: 2),
-
-              ListTile(
-                title: Text("Data Limite: ${"${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"}"),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime(2030),
-                  );
-                  if (picked != null) {
-                    dialogSetState(() => selectedDate = picked);
-                  }
-                },
-              ),
-
+              TextField(controller: titleCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "TÍTULO DA TAREFA")),
+              TextField(controller: obsCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "OBSERVAÇÕES"), maxLines: 2),
+              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)), trailing: const Icon(Icons.calendar_today, color: Colors.white), onTap: () async {
+                DateTime? picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime(2030));
+                if (picked != null) dialogSetState(() => selectedDate = picked);
+              }),
               DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Nível de Urgência:"),
+                dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "NÍVEL DE URGÊNCIA:"),
                 initialValue: selectedUrgencia,
                 items: urgenciaOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) => dialogSetState(() => selectedUrgencia = val!),
               ),
-
-              // Checkbox "Criar para todos"
               CheckboxListTile(
-                title: const Text("Criar para todos"),
+                title: const Text("CRIAR PARA TODOS", style: TextStyle(color: Colors.white)),
                 value: criarParaTodos,
-                onChanged: (val) => dialogSetState(() {
-                  criarParaTodos = val ?? false;
-                  if (criarParaTodos) selectedFuncionarioId = null;
-                }),
+                activeColor: DellalioTheme.accentGold,
+                onChanged: (val) => dialogSetState(() { criarParaTodos = val ?? false; if (criarParaTodos) selectedFuncionarioId = null; }),
               ),
-
               if (!criarParaTodos)
                 DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: "Atribuir para:"),
-                  items: pessoas.map((p) {
-                    return DropdownMenuItem(
-                      value: p.uid,
-                      child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"),
-                    );
-                  }).toList(),
+                  dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: "ATRIBUIR PARA:"),
+                  items: pessoas.map((p) => DropdownMenuItem(value: p.uid, child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"))).toList(),
                   onChanged: (val) => dialogSetState(() => selectedFuncionarioId = val),
                 ),
+              const SizedBox(height: 16),
+              const Text("MÍDIAS (FOTOS, VÍDEOS, ÁUDIOS):", style: TextStyle(color: Colors.white70, fontSize: 12)),
+              const SizedBox(height: 8),
+              if (selectedMedia.isNotEmpty)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: selectedMedia.map((file) {
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 60, height: 60,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(file, fit: BoxFit.cover, width: 60, height: 60),
+                          ),
+                        ),
+                        Positioned(
+                          right: -4, top: -4,
+                          child: GestureDetector(
+                            onTap: () => dialogSetState(() => selectedMedia.remove(file)),
+                            child: Container(
+                              decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              TextButton.icon(
+                onPressed: () async {
+                  final ImagePicker picker = ImagePicker();
+                  final XFile? media = await picker.pickMedia();
+                  if (media != null) {
+                    dialogSetState(() => selectedMedia.add(File(media.path)));
+                  }
+                },
+                icon: const Icon(Icons.attach_file, color: Colors.white70),
+                label: const Text("ADICIONAR MÍDIA", style: TextStyle(color: Colors.white70)),
+              ),
             ]),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCELAR")),
             ElevatedButton(
               onPressed: () async {
                 final bool tituloOk = titleCtrl.text.isNotEmpty;
                 final bool podeCriar = criarParaTodos ? tituloOk : (tituloOk && selectedFuncionarioId != null);
                 if (!podeCriar) return;
-
                 final adminUser = FirebaseAuth.instance.currentUser;
                 final String? creatorUid = adminUser?.uid;
-
-                // Busca o nome real do criador no Firestore
                 String creatorName = 'Administrador';
                 if (creatorUid != null) {
                   final creatorPerson = await PeopleService.fetchPerson(creatorUid);
-                  if (creatorPerson != null && creatorPerson.fullName.isNotEmpty) {
-                    creatorName = creatorPerson.fullName;
-                  }
+                  if (creatorPerson != null && creatorPerson.fullName.isNotEmpty) creatorName = creatorPerson.fullName;
                 }
-
                 Map<String, dynamic> taskData = {
-                  'title': titleCtrl.text,
-                  'observacoes': obsCtrl.text,
+                  'title': titleCtrl.text, 'observacoes': obsCtrl.text,
                   'deadline': "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                  'urgencia': selectedUrgencia,
-                  'status': 0, // Não Lido
-                  'createdBy': creatorUid,
-                  'createdByName': creatorName,
-                  'createdAt': FieldValue.serverTimestamp(),
+                  'urgencia': selectedUrgencia, 'status': 0,
+                  'createdBy': creatorUid, 'createdByName': creatorName, 'createdAt': FieldValue.serverTimestamp(),
                 };
 
+                // Upload das mídias para o Firebase Storage
+                final List<String> uploadedMediaUrls = [];
+                if (selectedMedia.isNotEmpty) {
+                  for (final file in selectedMedia) {
+                    final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split(Platform.isWindows ? '\\' : '/').last}';
+                    final ref = FirebaseStorage.instance.ref().child('task_media/$fileName');
+                    await ref.putFile(file);
+                    final url = await ref.getDownloadURL();
+                    uploadedMediaUrls.add(url);
+                  }
+                }
+                taskData['mediaUrls'] = uploadedMediaUrls;
+
                 if (criarParaTodos) {
-                  // Inclui TODOS (funcionarios + users), exceto o próprio criador
-                  final todos = pessoas
-                      .where((p) => p.uid != adminUser?.uid)
-                      .toList();
-
+                  final todos = pessoas.where((p) => p.uid != adminUser?.uid).toList();
                   final List<String> allUids = todos.map((p) => p.uid).toList();
-
-                  // Cria UM único documento na coleção tasks
                   DocumentReference taskRef = FirebaseFirestore.instance.collection('tasks').doc();
-                  final dataComDestino = {
-                    ...taskData,
-                    'paraTodos': true,
-                    'assignedTo': 'todos',
-                    'assignedToAll': allUids,
-                  };
-
+                  final dataComDestino = {...taskData, 'paraTodos': true, 'assignedTo': 'todos', 'assignedToAll': allUids};
                   WriteBatch batch = FirebaseFirestore.instance.batch();
                   batch.set(taskRef, dataComDestino);
-
-                  // Replica nas subcoleções de cada pessoa
                   for (final p in todos) {
-                    batch.set(
-                      FirebaseFirestore.instance
-                          .collection('funcionarios')
-                          .doc(p.uid)
-                          .collection('tarefas')
-                          .doc(taskRef.id),
-                      dataComDestino,
-                    );
-                    batch.set(
-                      FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(p.uid)
-                          .collection('tarefas')
-                          .doc(taskRef.id),
-                      dataComDestino,
-                    );
+                    batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(p.uid).collection('tarefas').doc(taskRef.id), dataComDestino);
+                    batch.set(FirebaseFirestore.instance.collection('users').doc(p.uid).collection('tarefas').doc(taskRef.id), dataComDestino);
                   }
                   await batch.commit();
                 } else {
                   WriteBatch batch = FirebaseFirestore.instance.batch();
                   DocumentReference taskRef = FirebaseFirestore.instance.collection('tasks').doc();
-                  final dataComDestino = {
-                    ...taskData,
-                    'assignedTo': selectedFuncionarioId,
-                  };
+                  final dataComDestino = {...taskData, 'assignedTo': selectedFuncionarioId};
                   batch.set(taskRef, dataComDestino);
-                  batch.set(
-                    FirebaseFirestore.instance
-                        .collection('funcionarios')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskRef.id),
-                    dataComDestino,
-                  );
-                  batch.set(
-                    FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskRef.id),
-                    dataComDestino,
-                  );
+                  batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(selectedFuncionarioId).collection('tarefas').doc(taskRef.id), dataComDestino);
+                  batch.set(FirebaseFirestore.instance.collection('users').doc(selectedFuncionarioId).collection('tarefas').doc(taskRef.id), dataComDestino);
                   await batch.commit();
                 }
-
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
               },
-              child: const Text("Criar"),
+              child: const Text("CRIAR"),
             ),
           ],
         ),
@@ -337,185 +247,95 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     );
   }
 
-  // Dialog para editar uma tarefa já existente.
   Future<void> _showEditTaskDialog(String taskId, Map<String, dynamic> data) async {
     TextEditingController titleCtrl = TextEditingController(text: data['title'] ?? '');
     TextEditingController obsCtrl = TextEditingController(text: data['observacoes'] ?? '');
-
     DateTime selectedDate = DateTime.now();
     final String? deadlineStr = data['deadline'] as String?;
     if (deadlineStr != null && deadlineStr.contains('/')) {
       final parts = deadlineStr.split('/');
-      if (parts.length == 3) {
-        final d = int.tryParse(parts[0]);
-        final m = int.tryParse(parts[1]);
-        final y = int.tryParse(parts[2]);
-        if (d != null && m != null && y != null) {
-          selectedDate = DateTime(y, m, d);
-        }
-      }
+      if (parts.length == 3) { final d = int.tryParse(parts[0]); final m = int.tryParse(parts[1]); final y = int.tryParse(parts[2]); if (d != null && m != null && y != null) selectedDate = DateTime(y, m, d); }
     }
-
     String selectedUrgencia = (data['urgencia'] as String?) ?? "Baixa";
     final List<String> urgenciaOptions = ["Baixa", "Média", "Alta"];
     String? selectedFuncionarioId = data['assignedTo'] as String?;
     final String? oldFuncionarioId = data['assignedTo'] as String?;
     final bool isParaTodos = data['paraTodos'] == true;
-
     final List<Person> pessoas = await PeopleService.fetchAllPeople();
     if (!mounted) return;
-
     if (selectedFuncionarioId != null && !pessoas.any((p) => p.uid == selectedFuncionarioId)) {
       final p = await PeopleService.fetchPerson(selectedFuncionarioId);
       if (p != null) pessoas.add(p);
     }
-
     if (!mounted) return;
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, dialogSetState) => AlertDialog(
-          title: const Text("Editar Tarefa"),
+          backgroundColor: DellalioTheme.darkSurface,
+          title: const Text("EDITAR TAREFA", style: TextStyle(color: Colors.white)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: "Título da Tarefa")),
-              TextField(controller: obsCtrl, decoration: const InputDecoration(labelText: "Observações"), maxLines: 2),
-
-              ListTile(
-                title: Text("Data Limite: ${"${selectedDate.day}/${selectedDate.month}/${selectedDate.year}"}"),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  DateTime? picked = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime(2020),
-                    lastDate: DateTime(2030),
-                  );
-                  if (picked != null) {
-                    dialogSetState(() => selectedDate = picked);
-                  }
-                },
-              ),
-
+              TextField(controller: titleCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "TÍTULO DA TAREFA")),
+              TextField(controller: obsCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "OBSERVAÇÕES"), maxLines: 2),
+              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)), trailing: const Icon(Icons.calendar_today, color: Colors.white), onTap: () async {
+                DateTime? picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
+                if (picked != null) dialogSetState(() => selectedDate = picked);
+              }),
               DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Nível de Urgência:"),
+                dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
+                decoration: const InputDecoration(labelText: "NÍVEL DE URGÊNCIA:"),
                 initialValue: selectedUrgencia,
                 items: urgenciaOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) => dialogSetState(() => selectedUrgencia = val!),
               ),
-
-              // Não permite trocar atribuição de tarefa "para todos"
               if (!isParaTodos)
                 DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: "Atribuir para:"),
+                  dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
+                  decoration: const InputDecoration(labelText: "ATRIBUIR PARA:"),
                   initialValue: selectedFuncionarioId,
-                  items: pessoas.map((p) {
-                    return DropdownMenuItem(
-                      value: p.uid,
-                      child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"),
-                    );
-                  }).toList(),
+                  items: pessoas.map((p) => DropdownMenuItem(value: p.uid, child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"))).toList(),
                   onChanged: (val) => dialogSetState(() => selectedFuncionarioId = val),
                 ),
             ]),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Cancelar")),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCELAR")),
             ElevatedButton(
               onPressed: () async {
                 if (titleCtrl.text.isEmpty) return;
                 if (!isParaTodos && selectedFuncionarioId == null) return;
-
-                final Map<String, dynamic> updatedData = {
-                  ...data,
-                  'title': titleCtrl.text,
-                  'observacoes': obsCtrl.text,
-                  'deadline': "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}",
-                  'urgencia': selectedUrgencia,
-                };
-                if (!isParaTodos) {
-                  updatedData['assignedTo'] = selectedFuncionarioId;
-                }
-
+                final Map<String, dynamic> updatedData = {...data, 'title': titleCtrl.text, 'observacoes': obsCtrl.text, 'deadline': "${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", 'urgencia': selectedUrgencia};
+                if (!isParaTodos) updatedData['assignedTo'] = selectedFuncionarioId;
                 WriteBatch batch = FirebaseFirestore.instance.batch();
                 DocumentReference taskRef = FirebaseFirestore.instance.collection('tasks').doc(taskId);
                 batch.update(taskRef, updatedData);
-
                 if (isParaTodos) {
-                  // Atualiza em todas as subcoleções
                   final all = data['assignedToAll'];
                   if (all is List) {
                     for (final uid in all) {
                       final uidStr = uid.toString();
-                      batch.set(
-                        FirebaseFirestore.instance
-                            .collection('funcionarios')
-                            .doc(uidStr)
-                            .collection('tarefas')
-                            .doc(taskId),
-                        updatedData,
-                        SetOptions(merge: true),
-                      );
-                      batch.set(
-                        FirebaseFirestore.instance
-                            .collection('users')
-                            .doc(uidStr)
-                            .collection('tarefas')
-                            .doc(taskId),
-                        updatedData,
-                        SetOptions(merge: true),
-                      );
+                      batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(uidStr).collection('tarefas').doc(taskId), updatedData, SetOptions(merge: true));
+                      batch.set(FirebaseFirestore.instance.collection('users').doc(uidStr).collection('tarefas').doc(taskId), updatedData, SetOptions(merge: true));
                     }
                   }
                 } else {
                   if (oldFuncionarioId != null && oldFuncionarioId != selectedFuncionarioId) {
-                    final oldRef = FirebaseFirestore.instance
-                        .collection('funcionarios')
-                        .doc(oldFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.delete(oldRef);
-                    final oldRefUser = FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(oldFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.delete(oldRefUser);
-
-                    final newRef = FirebaseFirestore.instance
-                        .collection('funcionarios')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.set(newRef, updatedData);
-                    final newRefUser = FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.set(newRefUser, updatedData);
+                    batch.delete(FirebaseFirestore.instance.collection('funcionarios').doc(oldFuncionarioId).collection('tarefas').doc(taskId));
+                    batch.delete(FirebaseFirestore.instance.collection('users').doc(oldFuncionarioId).collection('tarefas').doc(taskId));
+                    batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(selectedFuncionarioId).collection('tarefas').doc(taskId), updatedData);
+                    batch.set(FirebaseFirestore.instance.collection('users').doc(selectedFuncionarioId).collection('tarefas').doc(taskId), updatedData);
                   } else {
-                    final sameRef = FirebaseFirestore.instance
-                        .collection('funcionarios')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.set(sameRef, updatedData, SetOptions(merge: true));
-                    final sameRefUser = FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(selectedFuncionarioId)
-                        .collection('tarefas')
-                        .doc(taskId);
-                    batch.set(sameRefUser, updatedData, SetOptions(merge: true));
+                    batch.set(FirebaseFirestore.instance.collection('funcionarios').doc(selectedFuncionarioId).collection('tarefas').doc(taskId), updatedData, SetOptions(merge: true));
+                    batch.set(FirebaseFirestore.instance.collection('users').doc(selectedFuncionarioId).collection('tarefas').doc(taskId), updatedData, SetOptions(merge: true));
                   }
                 }
-
                 await batch.commit();
                 if (!ctx.mounted) return;
                 Navigator.pop(ctx);
               },
-              child: const Text("Salvar"),
+              child: const Text("SALVAR"),
             ),
           ],
         ),
@@ -523,7 +343,6 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     );
   }
 
-  // Busca os dados (nome + foto) de quem criou a tarefa
   Future<Person?> _getSenderPerson(String? createdBy) async {
     if (createdBy == null || createdBy.isEmpty) return null;
     return PeopleService.fetchPerson(createdBy);
@@ -531,98 +350,72 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
 
   Widget _senderAvatar(Person? person, {double radius = 13}) {
     final fotoUrl = person?.fotoUrl ?? '';
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.black12,
-      backgroundImage: fotoUrl.isNotEmpty ? NetworkImage(fotoUrl) : null,
-      child: fotoUrl.isEmpty
-          ? Icon(Icons.person, size: radius, color: Colors.black54)
-          : null,
-    );
+    return CircleAvatar(radius: radius, backgroundColor: Colors.black12, backgroundImage: fotoUrl.isNotEmpty ? NetworkImage(fotoUrl) : null, child: fotoUrl.isEmpty ? Icon(Icons.person, size: radius, color: Colors.black54) : null);
   }
 
-  /// Formata o Timestamp do Firestore para dd/mm/aaaa
   String _formatCreatedAt(dynamic createdAt) {
     if (createdAt == null) return '';
-    try {
-      final ts = createdAt as Timestamp;
-      final dt = ts.toDate();
-      return "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}";
-    } catch (_) {
-      return '';
-    }
+    try { final ts = createdAt as Timestamp; final dt = ts.toDate(); return "${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}"; } catch (_) { return ''; }
   }
 
-  // Dialog somente leitura com os detalhes completos da tarefa.
-  // Ao abrir, se o status for 0 (Não Lido) e o usuário for o destinatário,
-  // marca automaticamente como "Lido" (status 1).
   void _showTaskDetailsDialog(String taskId, Map<String, dynamic> data, bool canEdit) {
     final int status = data['status'] ?? 0;
     final bool recipient = _isRecipient(data);
     final bool isFinalizada = status == 3;
-
-    // Marca como LIDO automaticamente ao abrir (status 0 → 1)
-    if (recipient && status == 0) {
-      _updateTaskStatus(taskId, data, 1);
-    }
-
+    if (recipient && status == 0) _updateTaskStatus(taskId, data, 1);
     final String criadoEm = _formatCreatedAt(data['createdAt']);
     final bool isParaTodos = data['paraTodos'] == true;
+    final List<dynamic> mediaUrls = data['mediaUrls'] is List ? data['mediaUrls'] : [];
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text((data['title'] ?? 'Tarefa').toString()),
+        backgroundColor: DellalioTheme.darkSurface,
+        title: Text((data['title'] ?? 'TAREFA').toString().toUpperCase(), style: const TextStyle(color: Colors.white)),
         content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Observações:", style: const TextStyle(fontWeight: FontWeight.bold)),
-              Text((data['observacoes'] ?? '—').toString()),
-              const SizedBox(height: 10),
-              Text("Prazo: ${data['deadline'] ?? '--/--/--'}"),
-              Text("Urgência: ${data['urgencia'] ?? '—'}"),
-              if (isParaTodos)
-                const Text("Atribuído para: Todos")
-              else
-                FutureBuilder<Person?>(
-                  future: _getSenderPerson(data['assignedTo']?.toString()),
-                  builder: (context, snap) {
-                    final name = snap.data?.fullName ?? data['assignedTo'] ?? '—';
-                    return Text("Atribuído para: $name");
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text("OBSERVAÇÕES:", style: TextStyle(fontWeight: FontWeight.bold, color: DellalioTheme.textSecondary)),
+            Text((data['observacoes'] ?? '—').toString(), style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 10),
+            Text("PRAZO: ${data['deadline'] ?? '--/--/--'}", style: const TextStyle(color: Colors.white)),
+            Text("URGÊNCIA: ${data['urgencia'] ?? '—'}", style: const TextStyle(color: Colors.white)),
+            if (isParaTodos) const Text("ATRIBUÍDO PARA: TODOS", style: TextStyle(color: Colors.white)) else
+              FutureBuilder<Person?>(
+                future: _getSenderPerson(data['assignedTo']?.toString()),
+                builder: (context, snap) { final name = snap.data?.fullName ?? data['assignedTo'] ?? '—'; return Text("ATRIBUÍDO PARA: $name", style: const TextStyle(color: Colors.white)); },
+              ),
+            Text("CRIADO POR: ${data['createdByName'] ?? '—'}", style: const TextStyle(color: Colors.white)),
+            if (criadoEm.isNotEmpty) Text("CRIADO EM: $criadoEm", style: const TextStyle(color: Colors.white)),
+            if (mediaUrls.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Text("MÍDIAS:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 120,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: mediaUrls.length,
+                  itemBuilder: (context, index) {
+                    final url = mediaUrls[index].toString();
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(url, width: 120, height: 120, fit: BoxFit.cover),
+                      ),
+                    );
                   },
                 ),
-              Text("Criado por: ${data['createdByName'] ?? '—'}"),
-              if (criadoEm.isNotEmpty) Text("Criado em: $criadoEm"),
+              ),
             ],
-          ),
+          ]),
         ),
         actions: [
           if (recipient && !isFinalizada && (status == 0 || status == 1))
-            TextButton(
-              onPressed: () {
-                _updateTaskStatus(taskId, data, 2); // Em Processo
-                Navigator.pop(ctx);
-              },
-              child: const Text("MARCAR EM PROCESSO"),
-            ),
+            TextButton(onPressed: () { _updateTaskStatus(taskId, data, 2); Navigator.pop(ctx); }, child: const Text("MARCAR EM PROCESSO")),
           if (recipient && !isFinalizada)
-            TextButton(
-              onPressed: () {
-                _updateTaskStatus(taskId, data, 3); // Finalizado
-                Navigator.pop(ctx);
-              },
-              child: const Text("FINALIZAR", style: TextStyle(color: Colors.green)),
-            ),
-          if (canEdit)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                _showEditTaskDialog(taskId, data);
-              },
-              child: const Text("EDITAR"),
-            ),
+            TextButton(onPressed: () { _updateTaskStatus(taskId, data, 3); Navigator.pop(ctx); }, child: const Text("FINALIZAR", style: TextStyle(color: Colors.green))),
+          if (canEdit) TextButton(onPressed: () { Navigator.pop(ctx); _showEditTaskDialog(taskId, data); }, child: const Text("EDITAR")),
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("FECHAR")),
         ],
       ),
@@ -632,13 +425,15 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DellalioTheme.darkBackground,
       appBar: AppBar(
-        title: const Text("GESTÃO DE TAREFAS"),
+        title: const Text("GESTÃO DE TAREFAS", style: DellalioTheme.titleStyle),
+        backgroundColor: DellalioTheme.darkPrimary,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.black54,
-          indicatorColor: const Color(0xFFD4AF37),
+          labelColor: DellalioTheme.accentBlue,
+          unselectedLabelColor: const Color(0xFFB0BEC5),
+          indicatorColor: DellalioTheme.accentBlue,
           tabs: const [
             Tab(text: "TAREFAS ATRIBUÍDAS A MIM"),
             Tab(text: "ATRIBUÍDAS POR MIM"),
@@ -648,8 +443,8 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreateTaskDialog,
-        backgroundColor: const Color(0xFFD4AF37),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: DellalioTheme.accentGold,
+        child: const Icon(Icons.add, color: Colors.black),
       ),
       body: TabBarView(
         controller: _tabController,
@@ -667,7 +462,6 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
       stream: FirebaseFirestore.instance.collection('tasks').orderBy('createdAt', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
         final bool isAdmin = UserSession.isAdmin();
 
         final docs = snapshot.data!.docs.where((doc) {
@@ -675,74 +469,27 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
           final int status = data['status'] ?? 0;
           final bool isFinalizada = status == 3;
           final bool isParaTodos = data['paraTodos'] == true;
-
           switch (filter) {
-            case _TaskFilter.assignedToMe:
-              if (isFinalizada) return false;
-              if (isParaTodos) {
-                final all = data['assignedToAll'];
-                return all is List && all.contains(_currentUid);
-              }
-              return data['assignedTo'] == _currentUid;
-
-            case _TaskFilter.createdByMe:
-              if (isFinalizada) return false;
-              if (data['createdBy'] != _currentUid) return false;
-              // Para tarefas "para todos", mostra 1 card (não filtra por assignedTo)
-              if (isParaTodos) return true;
-              return data['assignedTo'] != _currentUid;
-
-            case _TaskFilter.history:
-              if (!isFinalizada) return false;
-              if (isAdmin) return true;
-              // Não-admin: vê histórico próprio
-              if (isParaTodos) {
-                final all = data['assignedToAll'];
-                if (all is List && all.contains(_currentUid)) return true;
-              }
-              return data['assignedTo'] == _currentUid || data['createdBy'] == _currentUid;
+            case _TaskFilter.assignedToMe: if (isFinalizada) return false; if (isParaTodos) { final all = data['assignedToAll']; return all is List && all.contains(_currentUid); } return data['assignedTo'] == _currentUid;
+            case _TaskFilter.createdByMe: if (isFinalizada) return false; if (data['createdBy'] != _currentUid) return false; if (isParaTodos) return true; return data['assignedTo'] != _currentUid;
+            case _TaskFilter.history: if (!isFinalizada) return false; if (isAdmin) return true; if (isParaTodos) { final all = data['assignedToAll']; if (all is List && all.contains(_currentUid)) return true; } return data['assignedTo'] == _currentUid || data['createdBy'] == _currentUid;
           }
         }).toList();
 
         if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  filter == _TaskFilter.history ? Icons.history : Icons.task_alt,
-                  size: 60,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  filter == _TaskFilter.history
-                      ? "Nenhuma tarefa no histórico."
-                      : "Nenhuma tarefa por aqui.",
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
-                ),
-              ],
-            ),
-          );
+          return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(filter == _TaskFilter.history ? Icons.history : Icons.task_alt, size: 60, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(filter == _TaskFilter.history ? "NENHUMA TAREFA NO HISTÓRICO." : "NENHUMA TAREFA POR AQUI.", style: TextStyle(color: DellalioTheme.textOnDark, fontSize: 16)),
+          ]));
         }
 
         final screenWidth = MediaQuery.of(context).size.width;
-        final crossAxisCount = screenWidth > 1200
-            ? 4
-            : screenWidth > 900
-                ? 3
-                : screenWidth > 600
-                    ? 2
-                    : 1;
+        final crossAxisCount = screenWidth > 1200 ? 4 : screenWidth > 900 ? 3 : screenWidth > 600 ? 2 : 1;
 
         return GridView.builder(
           padding: const EdgeInsets.all(16),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 7,
-            mainAxisSpacing: 16,
-            childAspectRatio: 0.65,
-          ),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: crossAxisCount, crossAxisSpacing: 7, mainAxisSpacing: 16, childAspectRatio: 0.65),
           itemCount: docs.length,
           itemBuilder: (context, index) {
             var doc = docs[index];
@@ -750,170 +497,57 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
             int status = data['status'] ?? 0;
             final bool canEdit = data['createdBy'] == _currentUid && status != 3;
             final bool isParaTodos = data['paraTodos'] == true;
-
-            // Cores e labels por status
-            Color color;
-            String label;
-            switch (status) {
-              case 0:
-                color = Colors.redAccent;
-                label = "NÃO LIDO";
-                break;
-              case 1:
-                color = Colors.blueAccent;
-                label = "LIDO";
-                break;
-              case 2:
-                color = Colors.amber;
-                label = "EM PROCESSO";
-                break;
-              case 3:
-                color = Colors.green;
-                label = "FINALIZADO";
-                break;
-              default:
-                color = Colors.grey;
-                label = "—";
-            }
-
+            Color color; String label;
+            switch (status) { case 0: color = Colors.redAccent; label = "NÃO LIDO"; break; case 1: color = Colors.blueAccent; label = "LIDO"; break; case 2: color = Colors.amber; label = "EM PROCESSO"; break; case 3: color = Colors.green; label = "FINALIZADO"; break; default: color = Colors.grey; label = "—"; }
             final String criadoEm = _formatCreatedAt(data['createdAt']);
+            final List<dynamic> mediaUrls = data['mediaUrls'] is List ? data['mediaUrls'] : [];
 
             return InkWell(
               onTap: () => _showTaskDetailsDialog(doc.id, data, canEdit),
               child: Container(
-              margin: const EdgeInsets.all(4),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF9C4),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 4,
-                    offset: Offset(2, 2),
-                  )
-                ],
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(2),
-                  topRight: Radius.circular(15),
-                  bottomLeft: Radius.circular(2),
-                  bottomRight: Radius.circular(2),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título + avatar de quem criou + botão de editar
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          (data['title'] ?? '').toString().toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      FutureBuilder<Person?>(
-                        future: _getSenderPerson(data['createdBy']?.toString()),
-                        builder: (context, snap) {
-                          return _senderAvatar(snap.data, radius: 12);
-                        },
-                      ),
-                      if (canEdit)
-                        InkWell(
-                          onTap: () => _showEditTaskDialog(doc.id, data),
-                          child: const Padding(
-                            padding: EdgeInsets.only(left: 4),
-                            child: Icon(Icons.edit, size: 14, color: Colors.black54),
-                          ),
-                        ),
-                    ],
-                  ),
+                margin: const EdgeInsets.all(4), padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: const Color(0xFFFFF9C4), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+                  borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(15), bottomLeft: Radius.circular(2), bottomRight: Radius.circular(2))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Row(children: [
+                    Expanded(child: Text((data['title'] ?? '').toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 6),
+                    FutureBuilder<Person?>(future: _getSenderPerson(data['createdBy']?.toString()), builder: (context, snap) => _senderAvatar(snap.data, radius: 12)),
+                    if (canEdit) InkWell(onTap: () => _showEditTaskDialog(doc.id, data), child: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.edit, size: 14, color: Colors.black54))),
+                  ]),
                   const Divider(),
                   const SizedBox(height: 4),
-                  // Observações
-                  Expanded(
-                    child: Text(
-                      (data['observacoes'] ?? '').toString().toUpperCase(),
-                      style: const TextStyle(fontSize: 12, color: Colors.black),
-                      overflow: TextOverflow.fade,
+                  Expanded(child: Text((data['observacoes'] ?? '').toString().toUpperCase(), style: const TextStyle(fontSize: 12, color: Colors.black), overflow: TextOverflow.fade)),
+                  if (mediaUrls.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      height: 50,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: mediaUrls.length,
+                        itemBuilder: (context, index) {
+                          final url = mediaUrls[index].toString();
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.network(url, width: 50, height: 50, fit: BoxFit.cover),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
+                  ],
                   const Divider(color: Colors.black12),
-                  // Rodapé: criado por + data
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 2),
-                    child: Text(
-                      "${data['createdByName'] ?? '—'} ${criadoEm.isNotEmpty ? '• $criadoEm' : ''}",
-                      style: const TextStyle(fontSize: 9, color: Colors.black54, fontStyle: FontStyle.italic),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  // Rodapé com Data Limite, botão excluir e status
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          data['deadline'] ?? '--/--/--',
-                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      if (canEdit)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 2),
-                          child: GestureDetector(
-                            onTap: () {
-                              showDialog(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text("Excluir Tarefa"),
-                                  content: const Text("Tem certeza que deseja remover esta tarefa?"),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Não")),
-                                    TextButton(
-                                      onPressed: () {
-                                        _deleteTask(doc.id, data);
-                                        Navigator.pop(ctx);
-                                      },
-                                      child: const Text("Sim, excluir", style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            child: const Icon(Icons.delete_outline, size: 14, color: Colors.red),
-                          ),
-                        ),
-
-                      // Badge "TODOS" para tarefas globais
-                      if (isParaTodos)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                          margin: const EdgeInsets.only(right: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.purple.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                          child: const Text("TODOS", style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold)),
-                        ),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  Padding(padding: const EdgeInsets.only(bottom: 2), child: Text("${data['createdByName'] ?? '—'} ${criadoEm.isNotEmpty ? '• $criadoEm' : ''}", style: const TextStyle(fontSize: 9, color: Colors.black54, fontStyle: FontStyle.italic), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Row(children: [
+                    Expanded(child: Text(data['deadline'] ?? '--/--/--', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(width: 4),
+                    if (canEdit) Padding(padding: const EdgeInsets.only(right: 2), child: GestureDetector(onTap: () { showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Excluir Tarefa"), content: const Text("Tem certeza que deseja remover esta tarefa?"), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Não")), TextButton(onPressed: () { _deleteTask(doc.id, data); Navigator.pop(ctx); }, child: const Text("Sim, excluir", style: TextStyle(color: Colors.red)))],)); }, child: const Icon(Icons.delete_outline, size: 14, color: Colors.red))),
+                    if (isParaTodos) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), margin: const EdgeInsets.only(right: 2), decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(3)), child: const Text("TODOS", style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold))),
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), decoration: BoxDecoration(color: color.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(3)), child: Text(label, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold))),
+                  ]),
+                ]),
               ),
             );
           },
