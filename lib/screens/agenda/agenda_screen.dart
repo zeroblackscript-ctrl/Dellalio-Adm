@@ -2,33 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme.dart';
 
-// Paleta de cores únicas para os usuários (15 cores bem distintas)
 const List<Color> _userColorPalette = [
-  Color(0xFFE53935), // vermelho
-  Color(0xFF1E88E5), // azul
-  Color(0xFF43A047), // verde
-  Color(0xFFFB8C00), // laranja
-  Color(0xFF8E24AA), // roxo
-  Color(0xFF00ACC1), // ciano
-  Color(0xFFD81B60), // rosa
-  Color(0xFF3949AB), // azul escuro
-  Color(0xFF6D4C41), // marrom
-  Color(0xFF00897B), // verde escuro
-  Color(0xFFF4511E), // laranja escuro
-  Color(0xFF5E35B1), // roxo escuro
-  Color(0xFF039BE5), // azul claro
-  Color(0xFF689F38), // verde lima
-  Color(0xFFC0CA33), // amarelo esverdeado
+  Color(0xFFE53935),
+  Color(0xFF1E88E5),
+  Color(0xFF43A047),
+  Color(0xFFFB8C00),
+  Color(0xFF8E24AA),
+  Color(0xFF00ACC1),
+  Color(0xFFD81B60),
+  Color(0xFF3949AB),
+  Color(0xFF6D4C41),
+  Color(0xFF00897B),
+  Color(0xFFF4511E),
+  Color(0xFF5E35B1),
+  Color(0xFF039BE5),
+  Color(0xFF689F38),
+  Color(0xFFC0CA33),
 ];
 
-/// Gera uma cor consistente para um usuário baseado no seu ID
 Color getUserColor(String userId) {
   final hash = userId.hashCode.abs();
   return _userColorPalette[hash % _userColorPalette.length];
 }
 
-/// Converte Color para string hex #RRGGBB
 String colorToHex(Color c) {
   final r = (c.r * 255).round().clamp(0, 255);
   final g = (c.g * 255).round().clamp(0, 255);
@@ -56,14 +54,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final firstDayOfMonth =
         DateTime(_displayMonth.year, _displayMonth.month, 1);
     final daysInMonth =
         DateTime(_displayMonth.year, _displayMonth.month + 1, 0).day;
     final startWeekday = firstDayOfMonth.weekday % 7;
 
+    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
+    final weekBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final cellBg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F0F0),
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: GestureDetector(
           onTap: () => _showMonthPicker(context),
@@ -75,51 +79,41 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     .format(_displayMonth)
                     .toUpperCase(),
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18),
+                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
               ),
               const SizedBox(width: 4),
               const Icon(Icons.arrow_drop_down, color: Colors.white),
             ],
           ),
         ),
-        backgroundColor: const Color.fromARGB(255, 98, 80, 63),
+        backgroundColor: petroleoColor,
         elevation: 1,
         actions: [
           IconButton(
             icon: const Icon(Icons.chevron_left, color: Colors.white),
             onPressed: () => setState(() {
-              _displayMonth =
-                  DateTime(_displayMonth.year, _displayMonth.month - 1);
+              _displayMonth = DateTime(_displayMonth.year, _displayMonth.month - 1);
             }),
           ),
           IconButton(
             icon: const Icon(Icons.chevron_right, color: Colors.white),
             onPressed: () => setState(() {
-              _displayMonth =
-                  DateTime(_displayMonth.year, _displayMonth.month + 1);
+              _displayMonth = DateTime(_displayMonth.year, _displayMonth.month + 1);
             }),
           ),
         ],
       ),
-      // Layout dividido: calendário à esquerda, compromissos à direita
       body: Row(
         children: [
-          // Lado esquerdo: Calendário
           SizedBox(
             width: 420,
             child: Column(
               children: [
-                // Cabeçalho dos dias da semana
-                _buildWeekHeader(),
-
-                // Grid do calendário
+                _buildWeekHeader(weekBg, isDark),
                 Expanded(
                   child: GridView.builder(
                     padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 7,
                       childAspectRatio: 1.0,
                       crossAxisSpacing: 1,
@@ -127,30 +121,22 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     ),
                     itemCount: daysInMonth + startWeekday,
                     itemBuilder: (context, index) {
-                      if (index < startWeekday) {
-                        return const SizedBox.shrink();
-                      }
+                      if (index < startWeekday) return const SizedBox.shrink();
                       final day = DateTime(_displayMonth.year,
                           _displayMonth.month, index - startWeekday + 1);
-                      return _buildDayCell(day);
+                      return _buildDayCell(day, cellBg, textColor);
                     },
                   ),
                 ),
               ],
             ),
           ),
-
-          // Divisor vertical
-          const VerticalDivider(width: 1, thickness: 1, color: Color(0xFFE0E0E0)),
-
-          // Lado direito: Detalhes do dia selecionado
-          Expanded(
-            child: _buildDayDetails(_selectedDay),
-          ),
+          VerticalDivider(width: 1, thickness: 1, color: isDark ? Colors.white24 : const Color(0xFFE0E0E0)),
+          Expanded(child: _buildDayDetails(_selectedDay, isDark)),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color.fromARGB(255, 98, 80, 63),
+        backgroundColor: petroleoColor,
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
         onPressed: () => _showEventDialog(_selectedDay, null),
@@ -158,10 +144,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  Widget _buildWeekHeader() {
+  Widget _buildWeekHeader(Color bg, bool isDark) {
     final dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     return Container(
-      color: Colors.white,
+      color: bg,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: dias
@@ -174,7 +160,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         fontSize: 11,
                         color: d == 'Dom' || d == 'Sáb'
                             ? Colors.red[300]
-                            : Colors.grey[700],
+                            : isDark ? Colors.white70 : Colors.grey[700],
                       ),
                     ),
                   ),
@@ -184,30 +170,24 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  Widget _buildDayCell(DateTime day) {
+  Widget _buildDayCell(DateTime day, Color bg, Color textColor) {
     final now = DateTime.now();
-    final bool isToday = day.year == now.year &&
-        day.month == now.month &&
-        day.day == now.day;
+    final bool isToday = day.year == now.year && day.month == now.month && day.day == now.day;
     final bool isSelected = day == _selectedDay;
-    final bool isWeekend =
-        day.weekday == DateTime.sunday || day.weekday == DateTime.saturday;
+    final bool isWeekend = day.weekday == DateTime.sunday || day.weekday == DateTime.saturday;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedDay = day),
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? const Color.fromARGB(255, 98, 80, 63).withValues(alpha: 0.12)
+              ? petroleoColor.withValues(alpha: 0.12)
               : isToday
                   ? Colors.amber.withValues(alpha: 0.08)
-                  : Colors.white,
+                  : bg,
           border: Border(
             bottom: BorderSide(
-                color: isSelected
-                    ? const Color.fromARGB(255, 98, 80, 63)
-                        .withValues(alpha: 0.3)
-                    : Colors.grey.shade200,
+                color: isSelected ? petroleoColor.withValues(alpha: 0.3) : Colors.grey.shade200,
                 width: isSelected ? 2 : 0.5),
             right: BorderSide(color: Colors.grey.shade200, width: 0.5),
           ),
@@ -215,19 +195,16 @@ class _AgendaScreenState extends State<AgendaScreen> {
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('agenda')
-              .where('date',
-                  isGreaterThanOrEqualTo:
-                      Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
-              .where('date',
-                  isLessThan: Timestamp.fromDate(
-                      DateTime(day.year, day.month, day.day + 1)))
+              .where('date', isGreaterThanOrEqualTo:
+                  Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
+              .where('date', isLessThan:
+                  Timestamp.fromDate(DateTime(day.year, day.month, day.day + 1)))
               .snapshots(),
           builder: (context, snapshot) {
             final docs = snapshot.data?.docs ?? [];
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Número do dia
                 Padding(
                   padding: const EdgeInsets.only(top: 3, left: 4),
                   child: Container(
@@ -235,27 +212,18 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     height: isToday ? 20 : null,
                     alignment: Alignment.center,
                     decoration: isToday
-                        ? BoxDecoration(
-                            color: const Color.fromARGB(255, 98, 80, 63),
-                            borderRadius: BorderRadius.circular(10),
-                          )
+                        ? BoxDecoration(color: petroleoColor, borderRadius: BorderRadius.circular(10))
                         : null,
                     child: Text(
                       "${day.day}",
                       style: TextStyle(
-                        fontWeight:
-                            isToday ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
                         fontSize: 12,
-                        color: isToday
-                            ? Colors.white
-                            : isWeekend
-                                ? Colors.red[300]
-                                : Colors.black87,
+                        color: isToday ? Colors.white : isWeekend ? Colors.red[300] : textColor,
                       ),
                     ),
                   ),
                 ),
-                // Barras de compromissos (indicadores)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(2, 1, 2, 0),
@@ -264,46 +232,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         children: docs.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           final color = Color(
-                            int.tryParse(data['userColor']
-                                        ?.toString()
-                                        .replaceFirst('#', '0xff') ??
-                                    '0xffE53935') ??
-                                0xffE53935,
+                            int.tryParse(data['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935,
                           );
                           final int imp = data['importancia'] ?? 0;
-                          final String name = (data['userName'] ?? '?')
-                              .toString()
-                              .toUpperCase();
-
+                          final String name = (data['userName'] ?? '?').toString().toUpperCase();
                           return Container(
                             margin: const EdgeInsets.only(bottom: 1),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 2, vertical: 0.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0.5),
                             decoration: BoxDecoration(
                               color: color.withValues(alpha: 0.45),
                               borderRadius: BorderRadius.circular(2),
-                              border: imp >= 3
-                                  ? const Border(
-                                      left: BorderSide(
-                                          color: Colors.red, width: 2))
-                                  : imp >= 2
-                                      ? const Border(
-                                          left: BorderSide(
-                                              color: Colors.orange, width: 2))
-                                      : null,
+                              border: imp >= 3 ? const Border(left: BorderSide(color: Colors.red, width: 2))
+                                  : imp >= 2 ? const Border(left: BorderSide(color: Colors.orange, width: 2)) : null,
                             ),
-                            child: Text(
-                              name,
-                              style: TextStyle(
-                                fontSize: 7.5,
-                                fontWeight: FontWeight.bold,
-                                color: imp >= 3
-                                    ? const Color(0xFFB71C1C)
-                                    : Colors.black87,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
+                            child: Text(name,
+                                style: TextStyle(fontSize: 7.5, fontWeight: FontWeight.bold,
+                                    color: imp >= 3 ? const Color(0xFFB71C1C) : textColor),
+                                overflow: TextOverflow.ellipsis, maxLines: 1),
                           );
                         }).toList(),
                       ),
@@ -318,23 +263,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  // ======================================================
-  // PAINEL DIREITO: detalhes do dia selecionado
-  // ======================================================
-  Widget _buildDayDetails(DateTime day) {
+  Widget _buildDayDetails(DateTime day, bool isDark) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final sectionBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
+    final grey100 = isDark ? const Color(0xFF2A2A2A) : Colors.grey[100];
+    final grey50 = isDark ? const Color(0xFF1E1E1E) : Colors.grey[50];
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('agenda')
-          .where('date',
-              isGreaterThanOrEqualTo:
-                  Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
-          .where('date',
-              isLessThan: Timestamp.fromDate(
-                  DateTime(day.year, day.month, day.day + 1)))
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
+          .where('date', isLessThan: Timestamp.fromDate(DateTime(day.year, day.month, day.day + 1)))
           .snapshots(),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
-
         if (docs.isEmpty) {
           return Center(
             child: Column(
@@ -342,102 +284,62 @@ class _AgendaScreenState extends State<AgendaScreen> {
               children: [
                 Icon(Icons.event_busy, size: 56, color: Colors.grey[350]),
                 const SizedBox(height: 10),
-                Text(
-                  'Nenhum compromisso',
-                  style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500),
-                ),
+                Text('NENHUM COMPROMISSO',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
-                Text(
-                  DateFormat("dd 'de' MMMM", 'pt_BR').format(day),
-                  style: TextStyle(color: Colors.grey[400], fontSize: 13),
-                ),
+                Text(DateFormat("dd 'de' MMMM", 'pt_BR').format(day),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 13)),
               ],
             ),
           );
         }
 
-        final sorted = List.from(docs)
-          ..sort((a, b) {
-            final da = a.data() as Map<String, dynamic>;
-            final db = b.data() as Map<String, dynamic>;
-            final ta = da['time'] ?? '';
-            final tb = db['time'] ?? '';
-            if (ta.isNotEmpty && tb.isNotEmpty) return ta.compareTo(tb);
-            final int ia = da['importancia'] ?? 0;
-            final int ib = db['importancia'] ?? 0;
-            return ib.compareTo(ia);
-          });
+        final sorted = List.from(docs)..sort((a, b) {
+          final da = a.data() as Map<String, dynamic>;
+          final db = b.data() as Map<String, dynamic>;
+          final ta = da['time'] ?? '';
+          final tb = db['time'] ?? '';
+          if (ta.isNotEmpty && tb.isNotEmpty) return ta.compareTo(tb);
+          final int ia = da['importancia'] ?? 0;
+          final int ib = db['importancia'] ?? 0;
+          return ib.compareTo(ia);
+        });
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Cabeçalho do dia
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: sectionBg,
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 98, 80, 63)
-                          .withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        "${day.day}",
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color.fromARGB(255, 98, 80, 63),
-                        ),
-                      ),
-                    ),
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(color: petroleoColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+                    child: Center(child: Text("${day.day}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: petroleoColor))),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    DateFormat("EEEE, MMMM", 'pt_BR').format(day),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: Color.fromARGB(255, 98, 80, 63),
-                    ),
-                  ),
+                  Text(DateFormat("EEEE, MMMM", 'pt_BR').format(day),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: petroleoColor)),
                   const Spacer(),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '${sorted.length} compromisso${sorted.length != 1 ? 's' : ''}',
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey[600]),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: grey100, borderRadius: BorderRadius.circular(12)),
+                    child: Text('${sorted.length} COMPROMISSO${sorted.length != 1 ? 'S' : ''}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                   ),
                 ],
               ),
             ),
-            const Divider(height: 1, color: Color(0xFFE0E0E0)),
-
-            // Lista de compromissos
+            Divider(height: 1, color: isDark ? Colors.white24 : const Color(0xFFE0E0E0)),
             Expanded(
               child: ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 itemCount: sorted.length,
                 itemBuilder: (context, index) {
-                  final data =
-                      sorted[index].data() as Map<String, dynamic>;
+                  final data = sorted[index].data() as Map<String, dynamic>;
                   final doc = sorted[index] as QueryDocumentSnapshot;
                   final int imp = data['importancia'] ?? 0;
                   final String time = data['time'] ?? '';
@@ -445,118 +347,54 @@ class _AgendaScreenState extends State<AgendaScreen> {
                   final String info = data['info'] ?? '';
                   final String userName = data['userName'] ?? '?';
                   final Color userColor = Color(
-                    int.tryParse(data['userColor']
-                                ?.toString()
-                                .replaceFirst('#', '0xff') ??
-                            '0xffE53935') ??
-                        0xffE53935,
+                    int.tryParse(data['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935,
                   );
-
-                  final Color impColor = imp >= 3
-                      ? Colors.red
-                      : imp >= 2
-                          ? Colors.orange
-                          : const Color.fromARGB(255, 98, 80, 63);
+                  final Color impColor = imp >= 3 ? Colors.red : imp >= 2 ? Colors.orange : petroleoColor;
 
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     elevation: 1,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(10),
                       onTap: () => _showEventDialog(day, doc),
                       child: Container(
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(10),
-                          border: Border(
-                            left: BorderSide(color: impColor, width: 4),
-                          ),
+                          border: Border(left: BorderSide(color: impColor, width: 4)),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Linha 1: Horário + badge + avatar
-                              Row(
-                                children: [
-                                  if (time.isNotEmpty) ...[
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
-                                      decoration: BoxDecoration(
-                                        color: impColor
-                                            .withValues(alpha: 0.12),
-                                        borderRadius:
-                                            BorderRadius.circular(6),
-                                      ),
-                                      child: Text(
-                                        time,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 13,
-                                          color: impColor,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                  ],
-                                  _badge(impColor,
-                                      imp >= 3
-                                          ? 'Alta'
-                                          : imp >= 2
-                                              ? 'Média'
-                                              : 'Normal',
-                                      imp),
-                                  const Spacer(),
-                                  CircleAvatar(
-                                    radius: 13,
-                                    backgroundColor: userColor,
-                                    child: Text(
-                                      userName.isNotEmpty
-                                          ? userName[0].toUpperCase()
-                                          : '?',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                              Row(children: [
+                                if (time.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(color: impColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+                                    child: Text(time, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: impColor)),
                                   ),
+                                  const SizedBox(width: 8),
                                 ],
-                              ),
-                              const SizedBox(height: 8),
-                              // Título
-                              Text(
-                                text.isNotEmpty ? text : 'Sem título',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: Colors.black87,
+                                _badge(impColor, imp >= 3 ? 'ALTA' : imp >= 2 ? 'MÉDIA' : 'NORMAL', imp),
+                                const Spacer(),
+                                CircleAvatar(
+                                  radius: 13, backgroundColor: userColor,
+                                  child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?',
+                                      style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
                                 ),
-                              ),
-                              // Info inline
+                              ]),
+                              const SizedBox(height: 8),
+                              Text(text.isNotEmpty ? text : 'SEM TÍTULO',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
                               if (info.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    info,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: Colors.grey[700],
-                                      height: 1.4,
-                                    ),
-                                    maxLines: 4,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                                  width: double.infinity, padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(color: grey50, borderRadius: BorderRadius.circular(8)),
+                                  child: Text(info, style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+                                      maxLines: 4, overflow: TextOverflow.ellipsis),
                                 ),
                               ],
                             ],
@@ -577,37 +415,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Widget _badge(Color color, String label, int imp) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.flag, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-        ],
-      ),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.flag, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
+      ]),
     );
   }
 
-  // ======================================================
-  // DIÁLOGO DE CRIAÇÃO / EDIÇÃO
-  // ======================================================
   void _showEventDialog(DateTime day, DocumentSnapshot? doc) async {
     final user = FirebaseAuth.instance.currentUser!;
     final isEditing = doc != null;
     final data = isEditing ? doc.data() as Map<String, dynamic> : null;
     final isOwner = !isEditing || data?['userId'] == user.uid;
-
     final descCtrl = TextEditingController(text: data?['text'] ?? '');
     final infoCtrl = TextEditingController(text: data?['info'] ?? '');
     final timeCtrl = TextEditingController(text: data?['time'] ?? '');
@@ -617,263 +438,115 @@ class _AgendaScreenState extends State<AgendaScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setDlg) => Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 460),
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 98, 80, 63)
-                              .withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            "${day.day}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                              color: Color.fromARGB(255, 98, 80, 63),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              DateFormat("EEEE, dd 'de' MMMM", 'pt_BR')
-                                  .format(day),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                                color: Color.fromARGB(255, 98, 80, 63),
-                              ),
-                            ),
-                            Text(
-                              DateFormat("yyyy", 'pt_BR').format(day),
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Container(
+                    width: 40, height: 40,
+                    decoration: BoxDecoration(color: petroleoColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Center(child: Text("${day.day}",
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: petroleoColor))),
                   ),
-                  const Divider(height: 24),
-
-                  // Horário
-                  if (isOwner) ...[
-                    _dialogLabel('HORÁRIO'),
-                    const SizedBox(height: 6),
-                    _dialogField(
-                      controller: timeCtrl,
-                      hint: 'Toque para selecionar o horário',
-                      icon: Icons.access_time,
-                      readOnly: true,
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(DateFormat("EEEE, dd 'de' MMMM", 'pt_BR').format(day),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: petroleoColor)),
+                    Text(DateFormat("yyyy", 'pt_BR').format(day), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                  ])),
+                ]),
+                const Divider(height: 24),
+                if (isOwner) ...[
+                  _dialogLabel('HORÁRIO'), const SizedBox(height: 6),
+                  _dialogField(controller: timeCtrl, hint: 'Toque para selecionar o horário', icon: Icons.access_time, readOnly: true,
                       onTap: () async {
-                        final picked = await showTimePicker(
-                            context: context, initialTime: TimeOfDay.now());
-                        if (picked != null) {
-                          timeCtrl.text =
-                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+                    if (picked != null) timeCtrl.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                  }),
+                  const SizedBox(height: 16),
+                ] else if (timeCtrl.text.isNotEmpty) ...[
+                  Row(children: [const Icon(Icons.access_time, size: 16), const SizedBox(width: 4), Text(timeCtrl.text, style: const TextStyle(fontSize: 14))]),
+                  const SizedBox(height: 16),
+                ],
+                _dialogLabel('NÍVEL DE IMPORTÂNCIA'), const SizedBox(height: 8),
+                Row(children: [
+                  _importanceChip('NORMAL', 0, imp, isOwner, (v) => setDlg(() => imp = v), petroleoColor),
+                  const SizedBox(width: 8),
+                  _importanceChip('MÉDIA', 2, imp, isOwner, (v) => setDlg(() => imp = v), Colors.orange),
+                  const SizedBox(width: 8),
+                  _importanceChip('ALTA', 3, imp, isOwner, (v) => setDlg(() => imp = v), Colors.red),
+                ]),
+                const SizedBox(height: 18),
+                _dialogLabel('O QUE SERÁ FEITO'), const SizedBox(height: 6),
+                _dialogField(controller: descCtrl, hint: 'Título ou tarefa principal...', enabled: isOwner, maxLines: 2),
+                const SizedBox(height: 16),
+                _dialogLabel('INFORMAÇÕES ADICIONAIS'), const SizedBox(height: 6),
+                _dialogField(controller: infoCtrl, hint: 'Medidas, observações ou notas...', enabled: isOwner, maxLines: 3),
+                const SizedBox(height: 24),
+                Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                  if (isEditing && isOwner)
+                    TextButton(onPressed: () { doc.reference.delete(); Navigator.pop(context); },
+                        child: const Text('EXCLUIR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+                  if (isOwner) ...[
+                    const Spacer(),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(backgroundColor: petroleoColor, foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                      icon: Icon(isEditing ? Icons.save : Icons.add, size: 20),
+                      label: Text(isEditing ? 'SALVAR' : 'ADICIONAR',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      onPressed: () async {
+                        if (descCtrl.text.trim().isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('O campo "O que será feito" é obrigatório'), backgroundColor: Colors.red));
+                          return;
                         }
+                        final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+                        final userDoc = await userRef.get();
+                        final userData = userDoc.data();
+                        String userColor;
+                        if (userData != null && userData['userColor'] != null && userData['userColor'].toString().isNotEmpty) {
+                          userColor = userData['userColor'].toString();
+                        } else {
+                          final color = getUserColor(user.uid);
+                          userColor = colorToHex(color);
+                          await userRef.set({'userColor': userColor}, SetOptions(merge: true));
+                        }
+                        final nota = {
+                          'userId': user.uid, 'userName': userData?['nome'] ?? 'Usuário', 'userColor': userColor,
+                          'text': descCtrl.text.trim(), 'info': infoCtrl.text.trim(), 'time': timeCtrl.text.trim(),
+                          'importancia': imp, 'date': Timestamp.fromDate(day),
+                        };
+                        if (!isEditing) {
+                          await FirebaseFirestore.instance.collection('agenda').add(nota);
+                        } else {
+                          await doc.reference.update(nota);
+                        }
+                        if (!mounted) return;
+                        Navigator.pop(context);
                       },
                     ),
-                    const SizedBox(height: 16),
-                  ] else if (timeCtrl.text.isNotEmpty) ...[
-                    Row(children: [
-                      const Icon(Icons.access_time, size: 16),
-                      const SizedBox(width: 4),
-                      Text(timeCtrl.text,
-                          style: const TextStyle(fontSize: 14)),
+                  ],
+                ]),
+                if (isEditing) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8)),
+                    child: Row(children: [
+                      CircleAvatar(radius: 12, backgroundColor: Color(
+                        int.tryParse(data?['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935)),
+                      const SizedBox(width: 8),
+                      Text('CRIADO POR ${data?['userName'] ?? 'DESCONHECIDO'}',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                     ]),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // Importância
-                  _dialogLabel('NÍVEL DE IMPORTÂNCIA'),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      _importanceChip('Normal', 0, imp, isOwner,
-                          (v) => setDlg(() => imp = v),
-                          const Color.fromARGB(255, 98, 80, 63)),
-                      const SizedBox(width: 8),
-                      _importanceChip('Média', 2, imp, isOwner,
-                          (v) => setDlg(() => imp = v), Colors.orange),
-                      const SizedBox(width: 8),
-                      _importanceChip('Alta', 3, imp, isOwner,
-                          (v) => setDlg(() => imp = v), Colors.red),
-                    ],
                   ),
-                  const SizedBox(height: 18),
-
-                  // O que será feito
-                  _dialogLabel('O QUE SERÁ FEITO'),
-                  const SizedBox(height: 6),
-                  _dialogField(
-                    controller: descCtrl,
-                    hint: 'Título ou tarefa principal...',
-                    enabled: isOwner,
-                    maxLines: 2,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Info adicional
-                  _dialogLabel('INFORMAÇÕES ADICIONAIS'),
-                  const SizedBox(height: 6),
-                  _dialogField(
-                    controller: infoCtrl,
-                    hint: 'Medidas, observações ou notas...',
-                    enabled: isOwner,
-                    maxLines: 3,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Botões
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      if (isEditing && isOwner)
-                        TextButton(
-                          onPressed: () {
-                            doc.reference.delete();
-                            Navigator.pop(context);
-                          },
-                          child: const Text('EXCLUIR',
-                              style: TextStyle(
-                                  color: Colors.red,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                      if (isOwner) ...[
-                        const Spacer(),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color.fromARGB(255, 98, 80, 63),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                          ),
-                          icon: Icon(
-                              isEditing ? Icons.save : Icons.add,
-                              size: 20),
-                          label: Text(
-                            isEditing ? 'SALVAR' : 'ADICIONAR',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14),
-                          ),
-                          onPressed: () async {
-                            if (descCtrl.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'O campo "O que será feito" é obrigatório'),
-                                    backgroundColor: Colors.red),
-                              );
-                              return;
-                            }
-
-                            // Busca dados do usuário
-                            final userRef = FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid);
-                            final userDoc = await userRef.get();
-                            final userData = userDoc.data();
-
-                            // Gera/obtém cor do usuário
-                            String userColor;
-                            if (userData != null &&
-                                userData['userColor'] != null &&
-                                userData['userColor']
-                                    .toString()
-                                    .isNotEmpty) {
-                              userColor = userData['userColor'].toString();
-                            } else {
-                              // Gera cor automática e salva no documento do usuário
-                              final color = getUserColor(user.uid);
-                              userColor = colorToHex(color);
-                              await userRef.set({
-                                'userColor': userColor,
-                              }, SetOptions(merge: true));
-                            }
-
-                            final nota = {
-                              'userId': user.uid,
-                              'userName': userData?['nome'] ?? 'Usuário',
-                              'userColor': userColor,
-                              'text': descCtrl.text.trim(),
-                              'info': infoCtrl.text.trim(),
-                              'time': timeCtrl.text.trim(),
-                              'importancia': imp,
-                              'date': Timestamp.fromDate(day),
-                            };
-
-                            if (!isEditing) {
-                              await FirebaseFirestore.instance
-                                  .collection('agenda')
-                                  .add(nota);
-                            } else {
-                              await doc.reference.update(nota);
-                            }
-                            if (!mounted) return;
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-
-                  // Quem criou
-                  if (isEditing) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 12,
-                            backgroundColor: Color(
-                              int.tryParse(data?['userColor']
-                                          ?.toString()
-                                          .replaceFirst('#', '0xff') ??
-                                      '0xffE53935') ??
-                                  0xffE53935,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Criado por ${data?['userName'] ?? 'Desconhecido'}',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
                 ],
-              ),
+              ]),
             ),
           ),
         ),
@@ -882,49 +555,23 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Widget _dialogLabel(String text) {
-    return Text(text,
-        style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: Colors.grey,
-            letterSpacing: 0.8));
+    return Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8));
   }
 
-  Widget _dialogField({
-    required TextEditingController controller,
-    String hint = '',
-    IconData? icon,
-    bool enabled = true,
-    int maxLines = 1,
-    bool readOnly = false,
-    VoidCallback? onTap,
-  }) {
+  Widget _dialogField({required TextEditingController controller, String hint = '', IconData? icon, bool enabled = true, int maxLines = 1, bool readOnly = false, VoidCallback? onTap}) {
     return TextField(
-      controller: controller,
-      enabled: enabled,
-      readOnly: readOnly,
-      maxLines: maxLines,
-      onTap: onTap,
+      controller: controller, enabled: enabled, readOnly: readOnly, maxLines: maxLines, onTap: onTap,
       decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-        filled: true,
-        fillColor: enabled ? Colors.grey[100] : Colors.grey[200],
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide.none,
-        ),
-        prefixIcon: icon != null
-            ? Icon(icon, size: 20, color: Colors.grey[500])
-            : null,
+        hintText: hint, hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        filled: true, fillColor: enabled ? Colors.grey[100] : Colors.grey[200],
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        prefixIcon: icon != null ? Icon(icon, size: 20, color: Colors.grey[500]) : null,
       ),
     );
   }
 
-  Widget _importanceChip(String label, int val, int cur, bool enabled,
-      Function(int) onSel, Color color) {
+  Widget _importanceChip(String label, int val, int cur, bool enabled, Function(int) onSel, Color color) {
     final sel = cur == val;
     return Expanded(
       child: GestureDetector(
@@ -935,40 +582,20 @@ class _AgendaScreenState extends State<AgendaScreen> {
           decoration: BoxDecoration(
             color: sel ? color.withValues(alpha: 0.15) : Colors.grey[100],
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: sel ? color : Colors.transparent,
-              width: 2,
-            ),
+            border: Border.all(color: sel ? color : Colors.transparent, width: 2),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.flag,
-                  size: 20, color: sel ? color : Colors.grey[400]),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: sel ? FontWeight.bold : FontWeight.w500,
-                  color: sel ? color : Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.flag, size: 20, color: sel ? color : Colors.grey[400]),
+            const SizedBox(height: 4),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.w500, color: sel ? color : Colors.grey[600])),
+          ]),
         ),
       ),
     );
   }
 
   Future<void> _showMonthPicker(BuildContext context) async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _displayMonth,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-      locale: const Locale('pt', 'BR'),
-    );
+    final picked = await showDatePicker(context: context, initialDate: _displayMonth, firstDate: DateTime(2020), lastDate: DateTime(2035), locale: const Locale('pt', 'BR'));
     if (picked != null) setState(() => _displayMonth = picked);
   }
 }

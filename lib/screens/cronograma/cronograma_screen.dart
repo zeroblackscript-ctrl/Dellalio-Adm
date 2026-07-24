@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/theme.dart';
 
 class CronogramaScreen extends StatefulWidget {
   const CronogramaScreen({super.key});
@@ -9,7 +10,12 @@ class CronogramaScreen extends StatefulWidget {
 }
 
 class _CronogramaScreenState extends State<CronogramaScreen> with SingleTickerProviderStateMixin {
-  final List<String> statusSteps = const ['conferencia', 'pedido', 'producao', 'entrega', 'montagem', 'finalizado'];
+  final List<String> statusSteps = const [
+    'CONFERÊNCIA', 'PEDIDO', 'PRODUÇÃO', 'ENTREGA', 'MONTAGEM', 'FINALIZADO'
+  ];
+  static const List<String> statusKeys = const [
+    'conferencia', 'pedido', 'producao', 'entrega', 'montagem', 'finalizado'
+  ];
   late AnimationController _controller;
 
   @override
@@ -25,62 +31,114 @@ class _CronogramaScreenState extends State<CronogramaScreen> with SingleTickerPr
     super.dispose();
   }
 
+  int _statusIndex(String status) {
+    final idx = statusKeys.indexOf(status);
+    return idx >= 0 ? idx : 2; // fallback 'producao'
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? DellalioTheme.darkBackground : const Color(0xFFF0F2F5);
+    final cardColor = isDark ? DellalioTheme.darkSurface : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final subtitleColor = isDark ? Colors.white70 : Colors.black54;
+    final stepColor = isDark ? petroleoLightColor : petroleoColor;
+    final unreachedColor = isDark ? Colors.white24 : Colors.grey.shade300;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 240, 240, 240), // Cor mais clara para melhor contraste
-      appBar: AppBar(title: const Text("CRONOGRAMA DE PRODUÇÃO")),
+      backgroundColor: bgColor,
+      appBar: AppBar(
+        title: const Text("CRONOGRAMA DE PRODUÇÃO"),
+        backgroundColor: petroleoColor,
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('clients').snapshots(),
         builder: (context, clientSnapshot) {
-          if (!clientSnapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!clientSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final clientDocs = clientSnapshot.data!.docs;
 
-          // Criamos um FutureBuilder para processar a união de projetos de forma limpa
           return FutureBuilder<List<Map<String, dynamic>>>(
             future: _fetchAllProjects(clientDocs),
             builder: (context, projectSnapshot) {
-              if (!projectSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-              
+              if (!projectSnapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
               final projetos = projectSnapshot.data!;
-              if (projetos.isEmpty) return const Center(child: Text("Nenhum projeto pendente."));
+              if (projetos.isEmpty) {
+                return Center(
+                  child: Text(
+                    "NENHUM PROJETO PENDENTE",
+                    style: TextStyle(color: subtitleColor, fontSize: 16),
+                  ),
+                );
+              }
 
               return ListView.builder(
                 padding: const EdgeInsets.only(top: 10),
                 itemCount: projetos.length,
                 itemBuilder: (context, index) {
                   final pData = projetos[index];
-                  var dataEntrega = (pData['deliveryDate'] as Timestamp?)?.toDate();
+                  var dataEntrega =
+                      (pData['deliveryDate'] as Timestamp?)?.toDate();
                   String statusAtual = pData['status'] ?? 'producao';
-                  
-                  int diasRestantes = dataEntrega != null ? dataEntrega.difference(DateTime.now()).inDays : 0;
-                  String textoDias = diasRestantes < 0 ? "Atrasado" : "$diasRestantes dias para entrega";
+
+                  int diasRestantes = dataEntrega != null
+                      ? dataEntrega.difference(DateTime.now()).inDays
+                      : 0;
+                  String textoDias = diasRestantes < 0
+                      ? "ATRASADO"
+                      : "$diasRestantes DIAS PARA ENTREGA";
+
+                  final Color diasColor = diasRestantes <= 3
+                      ? Colors.red
+                      : isDark
+                          ? Colors.greenAccent
+                          : Colors.green.shade700;
 
                   return Card(
+                    color: cardColor,
                     elevation: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         children: [
                           ListTile(
                             contentPadding: EdgeInsets.zero,
-                            title: Text(pData['projectName']?.toUpperCase() ?? 'SEM NOME', 
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            title: Text(
+                              pData['projectName']?.toUpperCase() ?? 'SEM NOME',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: textColor),
+                            ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Cliente: ${pData['clientName']}"),
-                                Text(textoDias, style: TextStyle(
-                                  fontWeight: FontWeight.bold, 
-                                  color: diasRestantes <= 3 ? Colors.red : Colors.green.shade700
-                                )),
+                                Text(
+                                  "CLIENTE: ${pData['clientName']}",
+                                  style: TextStyle(color: subtitleColor),
+                                ),
+                                Text(
+                                  textoDias,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: diasColor,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          const Divider(),
-                          _buildTimeline(statusAtual),
+                          Divider(color: isDark ? Colors.white12 : Colors.grey.shade200),
+                          _buildTimeline(statusAtual, stepColor, unreachedColor, isDark),
                         ],
                       ),
                     ),
@@ -94,54 +152,77 @@ class _CronogramaScreenState extends State<CronogramaScreen> with SingleTickerPr
     );
   }
 
-  // Método que busca todos os projetos ativos de todos os clientes
-  Future<List<Map<String, dynamic>>> _fetchAllProjects(List<QueryDocumentSnapshot> clientDocs) async {
+  Future<List<Map<String, dynamic>>> _fetchAllProjects(
+      List<QueryDocumentSnapshot> clientDocs) async {
     List<Map<String, dynamic>> allProjects = [];
 
     for (var client in clientDocs) {
-      final projects = await client.reference.collection('projects')
+      final projects = await client.reference
+          .collection('projects')
           .where('status', isNotEqualTo: 'finalizado')
           .get();
 
       for (var doc in projects.docs) {
         final data = doc.data();
-        data['clientName'] = (client.data() as Map<String, dynamic>)['name'] ?? 'Cliente';
+        data['clientName'] =
+            (client.data() as Map<String, dynamic>)['name'] ?? 'CLIENTE';
         allProjects.add(data);
       }
     }
-    // Ordena por data de entrega
-    allProjects.sort((a, b) => (a['deliveryDate'] as Timestamp? ?? Timestamp.now())
-        .compareTo(b['deliveryDate'] as Timestamp? ?? Timestamp.now()));
-    
+    allProjects.sort((a, b) =>
+        (a['deliveryDate'] as Timestamp? ?? Timestamp.now())
+            .compareTo(b['deliveryDate'] as Timestamp? ?? Timestamp.now()));
+
     return allProjects;
   }
 
-  Widget _buildTimeline(String currentStatus) {
-    // ... (Seu código original do _buildTimeline continua funcionando perfeitamente)
+  Widget _buildTimeline(String currentStatus, Color stepColor, Color unreachedColor, bool isDark) {
+    final currentIdx = _statusIndex(currentStatus);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: statusSteps.asMap().entries.map((entry) {
-        int idx = entry.key;
-        String step = entry.value;
-        bool isCurrent = step == currentStatus;
-        bool isReached = statusSteps.indexOf(step) <= statusSteps.indexOf(currentStatus);
-        
+      children: List.generate(statusSteps.length, (idx) {
+        final step = statusSteps[idx];
+        final isCurrent = idx == currentIdx;
+        final isReached = idx <= currentIdx;
+
         return Row(
           children: [
             Column(
               children: [
-                isCurrent 
-                  ? FadeTransition(opacity: _controller, child: const Icon(Icons.circle, size: 24, color: Colors.brown))
-                  : Icon(Icons.circle, size: 20, color: isReached ? Colors.brown : Colors.grey.shade300),
+                if (isCurrent)
+                  FadeTransition(
+                    opacity: _controller,
+                    child: Icon(Icons.circle, size: 24, color: stepColor),
+                  )
+                else
+                  Icon(Icons.circle,
+                      size: 20,
+                      color: isReached ? stepColor : unreachedColor),
                 const SizedBox(height: 5),
-                Text(step.toUpperCase(), style: TextStyle(fontSize: 8, color: isReached ? Colors.brown : Colors.grey)),
+                Text(
+                  step,
+                  style: TextStyle(
+                    fontSize: 7,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                    color: isReached
+                        ? (isDark ? Colors.white : stepColor)
+                        : (isDark ? Colors.white38 : Colors.grey),
+                  ),
+                ),
               ],
             ),
-            if (idx < statusSteps.length - 1) 
-              Container(width: 30, height: 2, color: statusSteps.indexOf(step) < statusSteps.indexOf(currentStatus) ? Colors.brown : Colors.grey.shade300),
+            if (idx < statusSteps.length - 1)
+              Container(
+                width: 22,
+                height: 2,
+                color: idx < currentIdx
+                    ? stepColor
+                    : unreachedColor,
+              ),
           ],
         );
-      }).toList(),
+      }),
     );
   }
 }

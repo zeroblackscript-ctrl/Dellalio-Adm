@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme.dart';
 
 class RemindersScreen extends StatefulWidget {
   const RemindersScreen({super.key});
@@ -145,8 +146,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF000000) : null;
     return Scaffold(
-      appBar: AppBar(title: const Text("LEMBRETES")),
+      backgroundColor: bgColor,
+      appBar: AppBar(title: const Text("LEMBRETES"), backgroundColor: petroleoColor),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddReminderDialog(),
         backgroundColor: const Color(0xFFD4AF37),
@@ -176,16 +180,23 @@ class _RemindersScreenState extends State<RemindersScreen> {
               var data = doc.data() as Map<String, dynamic>;
               DateTime dt = (data['dateTime'] as Timestamp).toDate();
               
+              final cardBg = data['color'] == 'red'
+                  ? (isDark ? Colors.red.shade900 : Colors.red.shade100)
+                  : data['color'] == 'green'
+                      ? (isDark ? Colors.green.shade900 : Colors.green.shade100)
+                      : (isDark ? Colors.amber.shade900 : Colors.amber.shade100);
+              final cardText = isDark ? Colors.white : Colors.black87;
+              final accentColor = isDark ? Colors.white70 : Colors.black87;
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: data['color'] == 'red' ? Colors.red.shade100 : data['color'] == 'green' ? Colors.green.shade100 : Colors.amber.shade100,
+                  color: cardBg,
                   border: Border.all(color: Colors.black87, width: 2.0),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(5), topRight: Radius.circular(20),
                     bottomLeft: Radius.circular(20), bottomRight: Radius.circular(5),
                   ),
-                  boxShadow: const [BoxShadow(color: Colors.black87, offset: Offset(3, 3))],
+                  boxShadow: isDark ? null : const [BoxShadow(color: Colors.black87, offset: Offset(3, 3))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,27 +204,26 @@ class _RemindersScreenState extends State<RemindersScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Expanded(child: Text(data['title'].toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+                        Expanded(child: Text(data['title'].toString().toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cardText))),
                         GestureDetector(
                           onTap: () => _showAddReminderDialog(existingDoc: doc),
-                          child: const Padding(
+                          child: Padding(
                             padding: EdgeInsets.symmetric(horizontal: 4.0),
-                            child: Icon(Icons.edit, size: 18, color: Colors.black87),
+                            child: Icon(Icons.edit, size: 18, color: accentColor),
                           ),
                         ),
                         GestureDetector(
                           onTap: () => doc.reference.delete(),
-                          child: const Icon(Icons.delete_forever, size: 20, color: Colors.black87),
+                          child: Icon(Icons.delete_forever, size: 20, color: accentColor),
                         ),
                       ],
                     ),
 
-                    const Divider(color: Colors.black45),
-                    Text(data['content'].toString().toUpperCase(), style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold), maxLines: 4, overflow: TextOverflow.ellipsis),
+                    Divider(color: isDark ? Colors.white24 : Colors.black45),
+                    Text(data['content'].toString().toUpperCase(), style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cardText), maxLines: 4, overflow: TextOverflow.ellipsis),
                     const Spacer(),
-                    Text("📅 ${DateFormat('dd/MM HH:mm').format(dt)}".toUpperCase(), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-// No seu itemBuilder do GridView:
-Text("👤 ${data['author']}".toUpperCase(), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),                  ],
+                    Text("📅 ${DateFormat('dd/MM HH:mm').format(dt)}".toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cardText)),
+Text("👤 ${data['author']}".toUpperCase(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cardText)),                  ],
                 ),
               );
             },

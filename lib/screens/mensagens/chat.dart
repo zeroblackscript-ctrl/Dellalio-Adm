@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/people_service.dart';
+import '../../core/theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId, chatName;
@@ -131,8 +132,17 @@ class _ChatScreenState extends State<ChatScreen> {
     // Marca o chat como lido ao abrir a tela
     WidgetsBinding.instance.addPostFrameCallback((_) => _markAsRead());
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
+    final meBubble = isDark ? petroleoDarkColor : Colors.amber.shade200;
+    final otherBubble = isDark ? const Color(0xFF37474F) : Colors.blueGrey.shade100;
+    final bubbleText = isDark ? Colors.white : Colors.black87;
+    final bubbleBorder = isDark ? Colors.white24 : Colors.black;
+    final inputFill = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.chatName)),
+      backgroundColor: bgColor,
+      appBar: AppBar(title: Text(widget.chatName.toUpperCase()), backgroundColor: petroleoColor),
       body: Column(
         children: [
           Expanded(
@@ -181,11 +191,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: isMe
-                                      ? Colors.amber.shade200
-                                      : Colors.blueGrey.shade100,
+                                  color: isMe ? meBubble : otherBubble,
                                   border: Border.all(
-                                    color: Colors.black,
+                                    color: bubbleBorder,
                                     width: 2,
                                   ),
                                   borderRadius: BorderRadius.only(
@@ -206,13 +214,14 @@ class _ChatScreenState extends State<ChatScreen> {
                                     if (!isMe)
                                       Text(
                                         data['senderName'] ?? '',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           fontSize: 10,
+                                          color: bubbleText,
                                         ),
                                       ),
                                     if (data['text'] != null)
-                                      Text(data['text']),
+                                      Text(data['text'], style: TextStyle(color: bubbleText)),
                                     if (data['imageUrl'] != null)
                                       ClipRRect(
                                         borderRadius: BorderRadius.circular(
@@ -273,7 +282,13 @@ class _ChatScreenState extends State<ChatScreen> {
                         _sendMessage(text: value);
                       }
                     },
-                    decoration: const InputDecoration(hintText: "Digite..."),
+                    style: TextStyle(color: bubbleText),
+                    decoration: InputDecoration(
+                      hintText: "DIGITE...",
+                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
+                      filled: true,
+                      fillColor: inputFill,
+                    ),
                   ),
                 ),
                 IconButton(

@@ -424,16 +424,18 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: DellalioTheme.darkBackground,
+      backgroundColor: isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground,
       appBar: AppBar(
         title: const Text("GESTÃO DE TAREFAS", style: DellalioTheme.titleStyle),
-        backgroundColor: DellalioTheme.darkPrimary,
+        backgroundColor: petroleoColor,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: DellalioTheme.accentBlue,
-          unselectedLabelColor: const Color(0xFFB0BEC5),
-          indicatorColor: DellalioTheme.accentBlue,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: const Color(0xFFD4AF37),
           tabs: const [
             Tab(text: "TAREFAS ATRIBUÍDAS A MIM"),
             Tab(text: "ATRIBUÍDAS POR MIM"),
@@ -502,22 +504,29 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
             final String criadoEm = _formatCreatedAt(data['createdAt']);
             final List<dynamic> mediaUrls = data['mediaUrls'] is List ? data['mediaUrls'] : [];
 
+            final isDark2 = Theme.of(context).brightness == Brightness.dark;
+            final cardBg = isDark2 ? Colors.amber.shade900 : const Color.fromARGB(255, 255, 230, 6);
+            final cardText = isDark2 ? Colors.white : Colors.black;
+            final cardSubtitle = isDark2 ? Colors.white70 : Colors.black54;
+
             return InkWell(
               onTap: () => _showTaskDetailsDialog(doc.id, data, canEdit),
               child: Container(
                 margin: const EdgeInsets.all(4), padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: const Color(0xFFFFF9C4), boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  boxShadow: isDark2 ? null : const [BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(2, 2))],
                   borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(15), bottomLeft: Radius.circular(2), bottomRight: Radius.circular(2))),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Expanded(child: Text((data['title'] ?? '').toString().toUpperCase(), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text((data['title'] ?? '').toString().toUpperCase(), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: cardText), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     const SizedBox(width: 6),
                     FutureBuilder<Person?>(future: _getSenderPerson(data['createdBy']?.toString()), builder: (context, snap) => _senderAvatar(snap.data, radius: 12)),
                     if (canEdit) InkWell(onTap: () => _showEditTaskDialog(doc.id, data), child: const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.edit, size: 14, color: Colors.black54))),
                   ]),
                   const Divider(),
                   const SizedBox(height: 4),
-                  Expanded(child: Text((data['observacoes'] ?? '').toString().toUpperCase(), style: const TextStyle(fontSize: 12, color: Colors.black), overflow: TextOverflow.fade)),
+                  Expanded(child: Text((data['observacoes'] ?? '').toString().toUpperCase(), style: TextStyle(fontSize: 12, color: cardText), overflow: TextOverflow.fade)),
                   if (mediaUrls.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     SizedBox(
@@ -538,10 +547,10 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
                       ),
                     ),
                   ],
-                  const Divider(color: Colors.black12),
-                  Padding(padding: const EdgeInsets.only(bottom: 2), child: Text("${data['createdByName'] ?? '—'} ${criadoEm.isNotEmpty ? '• $criadoEm' : ''}", style: const TextStyle(fontSize: 9, color: Colors.black54, fontStyle: FontStyle.italic), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                  Divider(color: isDark2 ? Colors.white12 : Colors.black12),
+                  Padding(padding: const EdgeInsets.only(bottom: 2), child: Text("${data['createdByName'] ?? '—'} ${criadoEm.isNotEmpty ? '• $criadoEm' : ''}", style: TextStyle(fontSize: 9, color: cardSubtitle, fontStyle: FontStyle.italic), maxLines: 1, overflow: TextOverflow.ellipsis)),
                   Row(children: [
-                    Expanded(child: Text(data['deadline'] ?? '--/--/--', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text(data['deadline'] ?? '--/--/--', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cardText), maxLines: 1, overflow: TextOverflow.ellipsis)),
                     const SizedBox(width: 4),
                     if (canEdit) Padding(padding: const EdgeInsets.only(right: 2), child: GestureDetector(onTap: () { showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Excluir Tarefa"), content: const Text("Tem certeza que deseja remover esta tarefa?"), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Não")), TextButton(onPressed: () { _deleteTask(doc.id, data); Navigator.pop(ctx); }, child: const Text("Sim, excluir", style: TextStyle(color: Colors.red)))],)); }, child: const Icon(Icons.delete_outline, size: 14, color: Colors.red))),
                     if (isParaTodos) Container(padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1), margin: const EdgeInsets.only(right: 2), decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(3)), child: const Text("TODOS", style: TextStyle(color: Colors.purple, fontSize: 8, fontWeight: FontWeight.bold))),

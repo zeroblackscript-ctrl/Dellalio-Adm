@@ -5,6 +5,7 @@ import 'chat.dart';
 import 'new_chat_screen.dart';
 import '../../core/people_service.dart';
 import '../../core/user_session.dart';
+import '../../core/theme.dart';
 
 
 class MensagensScreen extends StatelessWidget {
@@ -22,9 +23,12 @@ class MensagensScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid;
     final isAdmin = UserSession.isAdmin();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Conversas")),
+      backgroundColor: bgColor,
+      appBar: AppBar(title: const Text("CONVERSAS"), backgroundColor: petroleoColor),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _openNewChat(context),
         child: const Icon(Icons.add),
@@ -244,6 +248,14 @@ class MensagensScreen extends StatelessWidget {
     required String photoUrl,
     required bool isGroup,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+    final cardBorder = isDark ? Colors.white24 : Colors.black87;
+    final cardText = isDark ? Colors.white : Colors.black87;
+    final cardSubtitle = isDark ? Colors.white70 : Colors.black54;
+    final avatarBg = isDark ? Colors.white10 : Colors.black12;
+    final avatarIcon = isDark ? Colors.white70 : Colors.black87;
+
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -255,8 +267,8 @@ class MensagensScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.black87, width: 2.0),
+          color: cardBg,
+          border: Border.all(color: cardBorder, width: 2.0),
 
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(5),
@@ -264,25 +276,25 @@ class MensagensScreen extends StatelessWidget {
             bottomLeft: Radius.circular(20),
             bottomRight: Radius.circular(5),
           ),
-          boxShadow: const [
+          boxShadow: isDark ? null : const [
             BoxShadow(color: Colors.black87, offset: Offset(3, 3)),
           ],
         ),
         child: Row(
           children: [
             isGroup
-                ? const CircleAvatar(
+                ? CircleAvatar(
                     radius: 22,
-                    backgroundColor: Colors.black12,
-                    child: Icon(Icons.forum, color: Colors.black87),
+                    backgroundColor: avatarBg,
+                    child: Icon(Icons.forum, color: avatarIcon),
                   )
                 : CircleAvatar(
                     radius: 22,
-                    backgroundColor: Colors.black12,
+                    backgroundColor: avatarBg,
                     backgroundImage:
                         photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
                     child: photoUrl.isEmpty
-                        ? const Icon(Icons.person, color: Colors.black45)
+                        ? Icon(Icons.person, color: avatarIcon)
                         : null,
                   ),
             const SizedBox(width: 12),
@@ -292,18 +304,19 @@ class MensagensScreen extends StatelessWidget {
                 children: [
                   Text(
                     title.toUpperCase(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
+                      color: cardText,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (subtitle.isNotEmpty)
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: cardSubtitle,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -313,8 +326,8 @@ class MensagensScreen extends StatelessWidget {
             ),
             if (!isGroup || UserSession.isAdmin())
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                tooltip: 'Excluir conversa',
+                icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                tooltip: 'EXCLUIR CONVERSA',
                 onPressed: () => _deleteChat(context, chatId, title, isGroup: isGroup),
               ),
 

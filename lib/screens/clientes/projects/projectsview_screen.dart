@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/theme.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
   final String clientId;
@@ -32,8 +33,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   Future<void> _checkIfAdmin() async {
     final User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    final userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
     if (userDoc.exists && mounted) {
       final data = userDoc.data() as Map<String, dynamic>;
       setState(() {
@@ -66,7 +69,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     if (confirm != true || !mounted) return;
 
     try {
-      // Delete files from storage
       final projectSnap = await FirebaseFirestore.instance
           .collection('clients')
           .doc(widget.clientId)
@@ -101,7 +103,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
         messenger.showSnackBar(
-          const SnackBar(content: Text('Projeto excluído com sucesso!')),
+          const SnackBar(content: Text('PROJETO EXCLUÍDO COM SUCESSO!')),
         );
       }
     } catch (e) {
@@ -109,7 +111,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
         messenger.showSnackBar(
-          SnackBar(content: Text('Erro ao excluir projeto: $e')),
+          SnackBar(content: Text('ERRO AO EXCLUIR PROJETO: $e')),
         );
       }
     }
@@ -153,7 +155,6 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   body: Center(child: CircularProgressIndicator()));
             }
 
-            // Se o projeto foi excluído, volta para a tela anterior
             if (!projectSnap.data!.exists) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted) {
@@ -169,19 +170,27 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
             final projectData =
                 projectSnap.data!.data() as Map<String, dynamic>;
 
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final bg = isDark ? DellalioTheme.darkBackground : const Color(0xFFF0F2F5);
             return DefaultTabController(
               length: 4,
               child: Scaffold(
-                backgroundColor: Colors.grey[200],
+                backgroundColor: bg,
                 appBar: AppBar(
                   title: Text((projectData['projectName'] ??
                           projectData['nome'])
                       ?.toString()
                       .toUpperCase() ??
                       "PROJETO"),
-                  backgroundColor: const Color.fromARGB(255, 98, 80, 63),
+                  backgroundColor: petroleoColor,
                   bottom: const TabBar(
                     labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white70,
+                    indicatorColor: Color(0xFFD4AF37),
+                    labelStyle: TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 13),
+                    unselectedLabelStyle: TextStyle(
+                        fontWeight: FontWeight.w500, fontSize: 13),
                     tabs: [
                       Tab(text: "INFO"),
                       Tab(text: "FOTOS"),
@@ -205,8 +214,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                     if (_isAdmin) const SizedBox(height: 8),
                     FloatingActionButton(
                       heroTag: 'edit',
-                      backgroundColor:
-                          const Color.fromARGB(255, 98, 80, 63),
+                      backgroundColor: petroleoColor,
                       child:
                           const Icon(Icons.edit, color: Colors.white),
                       onPressed: () {
@@ -245,7 +253,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         (project['address'] ?? '').toString().trim();
     final String address = projectAddress.isNotEmpty
         ? projectAddress
-        : (client['address'] ?? 'Não informado').toString();
+        : (client['address'] ?? 'NÃO INFORMADO').toString();
     final String cep = (project['cep'] ?? '').toString().trim();
     final String deliveryDate = _formatDate(project['deliveryDate']);
 
@@ -259,65 +267,69 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         _sectionTitle("DADOS DO CLIENTE"),
         Card(
             child: ListTile(
-                leading: const Icon(Icons.person),
+                leading: const Icon(Icons.person, color: petroleoColor),
                 title: Text(
                     (client['name'] ?? '---').toString().toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Nome"))),
+                subtitle: const Text("NOME"))),
         Card(
             child: ListTile(
-                leading: const Icon(Icons.phone),
+                leading: const Icon(Icons.phone, color: petroleoColor),
                 title: Text(
                     (client['phone'] ?? '---').toString().toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Telefone"))),
+                subtitle: const Text("TELEFONE"))),
         const SizedBox(height: 16),
         _sectionTitle("DADOS DA OBRA"),
         Card(
             child: ListTile(
-                leading: const Icon(Icons.home),
+                leading: const Icon(Icons.home, color: petroleoColor),
                 title: Text(address.toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Endereço da Obra"))),
+                subtitle: const Text("ENDEREÇO DA OBRA"))),
         if (cep.isNotEmpty)
           Card(
               child: ListTile(
-                  leading: const Icon(Icons.markunread_mailbox),
+                  leading: const Icon(Icons.markunread_mailbox,
+                      color: petroleoColor),
                   title: Text(cep,
                       style: const TextStyle(fontWeight: FontWeight.bold)),
                   subtitle: const Text("CEP"))),
         Card(
             child: ListTile(
-                leading: const Icon(Icons.info),
+                leading: const Icon(Icons.info, color: petroleoColor),
                 title: Text(
                     (project['status'] ?? 'PENDENTE')
                         .toString()
                         .toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Status do Projeto"))),
+                subtitle: const Text("STATUS DO PROJETO"))),
         Card(
             child: ListTile(
-                leading: const Icon(Icons.calendar_today),
+                leading: const Icon(Icons.calendar_today,
+                    color: petroleoColor),
                 title: Text(deliveryDate.toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("Entrega"))),
+                subtitle: const Text("ENTREGA"))),
         if ((project['formaPagamento'] ?? '').toString().isNotEmpty)
           Card(
               child: ListTile(
-                  leading: const Icon(Icons.payments),
+                  leading:
+                      const Icon(Icons.payments, color: petroleoColor),
                   title: Text(
                       project['formaPagamento']
                           .toString()
                           .toUpperCase(),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("Forma de Pagamento"))),
+                  subtitle: const Text("FORMA DE PAGAMENTO"))),
         if ((project['notes'] ?? '').toString().isNotEmpty)
           Card(
               child: ListTile(
-                  leading: const Icon(Icons.notes),
+                  leading:
+                      const Icon(Icons.notes, color: petroleoColor),
                   title: Text(project['notes'].toString(),
                       style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("Observações"))),
+                  subtitle: const Text("OBSERVAÇÕES"))),
         const SizedBox(height: 16),
         _sectionTitle("ESPECIFICAÇÕES TÉCNICAS"),
         if (corCaixa.isEmpty &&
@@ -327,39 +339,43 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           const Card(
               child: ListTile(
                   leading: Icon(Icons.info_outline),
-                  title: Text("Nenhuma especificação cadastrada"))),
+                  title: Text("NENHUMA ESPECIFICAÇÃO CADASTRADA"))),
         if (corCaixa.isNotEmpty || project['valorCaixa'] != null)
           Card(
             color: const Color(0xFFF3E9D2),
             child: ListTile(
               leading: const Icon(Icons.inventory_2,
-                  color: Color.fromARGB(255, 98, 80, 63)),
+                  color: petroleoColor),
               title: Text(
                   corCaixa.isNotEmpty
                       ? corCaixa.toUpperCase()
                       : 'NÃO INFORMADA',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("Cor da Caixaria"),
-              trailing: Text("R\$ ${_formatMoney(project['valorCaixa'])}",
+              subtitle: const Text("COR DA CAIXARIA"),
+              trailing: Text(
+                  "R\$ ${_formatMoney(project['valorCaixa'])}",
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.green)),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green)),
             ),
           ),
         if (corAcab.isNotEmpty || project['valorAcab'] != null)
           Card(
             color: const Color(0xFFF3E9D2),
             child: ListTile(
-              leading: const Icon(Icons.brush,
-                  color: Color.fromARGB(255, 98, 80, 63)),
+              leading:
+                  const Icon(Icons.brush, color: petroleoColor),
               title: Text(
                   corAcab.isNotEmpty
                       ? corAcab.toUpperCase()
                       : 'NÃO INFORMADO',
                   style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("Cor do Acabamento"),
-              trailing: Text("R\$ ${_formatMoney(project['valorAcab'])}",
+              subtitle: const Text("COR DO ACABAMENTO"),
+              trailing: Text(
+                  "R\$ ${_formatMoney(project['valorAcab'])}",
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.green)),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green)),
             ),
           ),
         if (extras.isNotEmpty) ...[
@@ -368,15 +384,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ...extras.map((ex) {
             final Map exMap = ex as Map;
             final String nome =
-                (exMap['nome'] ?? exMap['desc'] ?? 'Extra').toString();
+                (exMap['nome'] ?? exMap['desc'] ?? 'EXTRA').toString();
             return Card(
               child: ListTile(
-                leading: const Icon(Icons.add_box, color: Colors.blueGrey),
+                leading: const Icon(Icons.add_box,
+                    color: petroleoColor),
                 title: Text(nome.toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold)),
                 trailing: Text("R\$ ${_formatMoney(exMap['valor'])}",
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.green)),
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green)),
               ),
             );
           }),
@@ -386,7 +404,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         Card(
           color: Colors.green[50],
           child: ListTile(
-            leading: const Icon(Icons.attach_money, color: Colors.green),
+            leading:
+                const Icon(Icons.attach_money, color: Colors.green),
             title: Text(
               "R\$ ${_formatMoney(project['valor'] ?? project['valorTotal'])}",
               style: const TextStyle(
@@ -394,7 +413,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   fontSize: 18,
                   color: Colors.green),
             ),
-            subtitle: const Text("Valor do Projeto"),
+            subtitle: const Text("VALOR DO PROJETO"),
           ),
         ),
       ],
@@ -409,14 +428,14 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
-            color: Color.fromARGB(255, 98, 80, 63)),
+            color: petroleoColor),
       ),
     );
   }
 
   Widget _buildGalleryTab(List<dynamic>? urls) {
     if (urls == null || urls.isEmpty)
-      return const Center(child: Text("Nenhuma foto"));
+      return const Center(child: Text("NENHUMA FOTO"));
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -444,17 +463,18 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Widget _buildFilesTab(List<dynamic>? files) {
     if (files == null || files.isEmpty)
-      return const Center(child: Text("Nenhum arquivo"));
+      return const Center(child: Text("NENHUM ARQUIVO"));
     return ListView.builder(
       itemCount: files.length,
       itemBuilder: (ctx, i) {
         final dynamic raw = files[i];
         final String name =
-            (raw is Map) ? (raw['name']?.toString() ?? 'Arquivo') : 'Arquivo';
+            (raw is Map) ? (raw['name']?.toString() ?? 'ARQUIVO') : 'ARQUIVO';
         final String? url = (raw is Map) ? raw['url']?.toString() : null;
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.picture_as_pdf, color: Colors.red),
+            leading:
+                const Icon(Icons.picture_as_pdf, color: Colors.red),
             title: Text(name.toUpperCase()),
             onTap: url == null
                 ? null
@@ -468,18 +488,19 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
   Widget _buildDocumentsTab(List<dynamic>? docs) {
     if (docs == null || docs.isEmpty)
-      return const Center(child: Text("Nenhum documento"));
+      return const Center(child: Text("NENHUM DOCUMENTO"));
     return ListView.builder(
       itemCount: docs.length,
       itemBuilder: (ctx, i) {
         final dynamic raw = docs[i];
         final String name = (raw is Map)
-            ? (raw['name']?.toString() ?? 'Documento')
-            : 'Documento';
+            ? (raw['name']?.toString() ?? 'DOCUMENTO')
+            : 'DOCUMENTO';
         final String? url = (raw is Map) ? raw['url']?.toString() : null;
         return Card(
           child: ListTile(
-            leading: const Icon(Icons.description, color: Colors.blueGrey),
+            leading: const Icon(Icons.description,
+                color: petroleoColor),
             title: Text(name.toUpperCase()),
             onTap: url == null
                 ? null

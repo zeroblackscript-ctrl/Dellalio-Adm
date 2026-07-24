@@ -11,12 +11,14 @@ import 'package:auto_updater/auto_updater.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../../core/theme.dart';
+import '../../core/user_session.dart';
 import '../login/login_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:rxdart/rxdart.dart';
 
 /// Versão atual do aplicativo (extraída do pubspec.yaml)
-const String kAppVersion = '1.1.0';
+const String kAppVersion = '1.4.1';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -88,6 +90,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // Rodapé
                   const Divider(color: Colors.white24),
+                  _buildThemeToggle(),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
@@ -106,6 +109,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Expanded(child: pages[_selectedIndex]),
         ],
       ),
+    );
+  }
+
+  Widget _buildThemeToggle() {
+    final isDark = UserSession.isDarkMode();
+    return ListTile(
+      leading: Icon(
+        isDark ? Icons.light_mode : Icons.dark_mode,
+        color: Colors.white70,
+      ),
+      title: Text(
+        isDark ? 'Modo Claro' : 'Modo Escuro',
+        style: const TextStyle(color: Colors.white70),
+      ),
+      onTap: () async {
+        await UserSession.toggleDarkMode();
+        ThemeNotifier.instance.toggle();
+        setState(() {});
+      },
     );
   }
 

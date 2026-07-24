@@ -14,10 +14,13 @@ class UserSession {
   static const String adminKey = "admin31102024";
 
   static const String _prefsAdminFlag = "dellalio_is_admin";
+  static const String _prefsDarkMode = "dellalio_dark_mode";
 
   static bool _isAdmin = false;
+  static bool _isDarkMode = true;
 
   static bool isAdmin() => _isAdmin;
+  static bool isDarkMode() => _isDarkMode;
 
   /// Valida a chave digitada no login. Se correta, marca a sessão
   /// como Admin e persiste esse estado localmente.
@@ -35,6 +38,19 @@ class UserSession {
   static Future<void> loadPersistedAdminStatus() async {
     final prefs = await SharedPreferences.getInstance();
     _isAdmin = prefs.getBool(_prefsAdminFlag) ?? false;
+  }
+
+  /// Alterna o tema entre claro e escuro e persiste a escolha.
+  static Future<void> toggleDarkMode() async {
+    _isDarkMode = !_isDarkMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prefsDarkMode, _isDarkMode);
+  }
+
+  /// Carrega a preferência de tema salva localmente.
+  static Future<void> loadDarkModePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDarkMode = prefs.getBool(_prefsDarkMode) ?? true;
   }
 
   /// Limpa o estado de admin (usado no logout).

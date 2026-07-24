@@ -5,6 +5,29 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.4.1</title>
+      <description>
+        - Tema azul petróleo em todo o sistema
+        - Modo claro/escuro completo em todas as telas
+        - Cards de projetos coloridos por categoria
+        - Seletor de cores ao criar/editar projetos (10 cores)
+        - TabView com letras brancas e indicador dourado
+        - Correção de visibilidade em mensagens, tarefas e lembretes no modo escuro
+        - Melhorias visuais gerais em todas as telas
+      </description>
+      <pubDate>Thu, 24 Jul 2026 20:30:00 -0300</pubDate>
+      <sparkle:version>1.4.1.9</sparkle:version>
+      <sparkle:shortVersionString>1.4.1</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.1</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.1/DellalioCerebroADM_Setup_v1.4.1.exe"
+        sparkle:version="1.4.1.9"
+        sparkle:shortVersionString="1.4.1"
+        length="43280175"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.3.5</title>
       <description>
         - Correções e melhorias gerais

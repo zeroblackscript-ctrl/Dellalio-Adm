@@ -6,6 +6,7 @@ import 'package:auto_updater/auto_updater.dart';
 import 'screens/login/login_screen.dart';
 import 'screens/inicio/dashboard_screen.dart';
 import 'core/user_session.dart';
+import 'core/theme.dart';
 import 'firebase_options.dart';
 
 /// URL do AppCast (feed de atualizações) para o auto_updater.
@@ -32,19 +33,47 @@ void main() async {
   }
   // ------------------------------------
 
+  // Carrega a preferência de tema antes de iniciar o app
+  await UserSession.loadDarkModePreference();
+  final initialMode = UserSession.isDarkMode() ? ThemeMode.dark : ThemeMode.light;
+  ThemeNotifier.instance.setMode(initialMode);
+
   runApp(const DellalioCerebroApp());
 }
 
-class DellalioCerebroApp extends StatelessWidget {
+class DellalioCerebroApp extends StatefulWidget {
   const DellalioCerebroApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  State<DellalioCerebroApp> createState() => _DellalioCerebroAppState();
+}
 
-      
+class _DellalioCerebroAppState extends State<DellalioCerebroApp> {
+  @override
+  void initState() {
+    super.initState();
+    ThemeNotifier.instance.addListener(_onThemeChange);
+  }
+
+  @override
+  void dispose() {
+    ThemeNotifier.instance.removeListener(_onThemeChange);
+    super.dispose();
+  }
+
+  void _onThemeChange() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final themeMode = ThemeNotifier.instance.mode;
+    return MaterialApp(
       title: 'Dellalio Cérebro',
       debugShowCheckedModeBanner: false,
+      theme: DellalioTheme.lightTheme,
+      darkTheme: DellalioTheme.darkTheme,
+      themeMode: themeMode,
       home: const AuthGate(),
     );
   }

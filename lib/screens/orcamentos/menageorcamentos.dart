@@ -3,6 +3,7 @@ import 'package:DELLALIO/screens/orcamentos/editorcamento.dart';
 import 'package:DELLALIO/screens/orcamentos/vieworcamentos.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/theme.dart';
 
 class ManageOrcamentosListScreen extends StatefulWidget {
   const ManageOrcamentosListScreen({super.key});
@@ -62,7 +63,11 @@ class _ManageOrcamentosListScreenState extends State<ManageOrcamentosListScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
+    return Container(
+      color: bgColor,
+      child: Column(
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
@@ -135,15 +140,20 @@ class _ManageOrcamentosListScreenState extends State<ManageOrcamentosListScreen>
           ),
         ),
       ],
+      ),
     );
   }
 
   
 Widget _buildOrcamentoCard(BuildContext context, DocumentSnapshot doc) {
   final data = doc.data() as Map<String, dynamic>;
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final cardColor = isDark ? const Color(0xFF0D0D0D) : Colors.white;
+  final textColor = isDark ? Colors.white : Colors.black87;
   
   return Card(
     elevation: 4,
+    color: cardColor,
     child: InkWell(
       onTap: () => Navigator.push(
         context,
@@ -158,7 +168,7 @@ Widget _buildOrcamentoCard(BuildContext context, DocumentSnapshot doc) {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(data['name']?.toString().toUpperCase() ?? "SEM NOME",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
                       SizedBox(height: 20,),
                   
                   // // AQUI BUSCAMOS O NOME DO PROJETO
@@ -187,7 +197,7 @@ Widget _buildOrcamentoCard(BuildContext context, DocumentSnapshot doc) {
             height: 45,
             width: double.infinity,
             decoration: const BoxDecoration(
-              color: Color(0xFFD4AF37),
+              color: petroleoColor,
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
