@@ -308,14 +308,17 @@ class ViewBudgetScreen extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             onTap: () {
               Navigator.push(context, MaterialPageRoute(
-                builder: (_) => ConfigurarAmbienteScreen(orcamentoId: orcamentoId),
+                builder: (_) => EditorAmbienteScreen(
+                  orcamentoId: orcamentoId,
+                  projeto: pData,
+                ),
               ));
             },
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Text(
-                  (pData['projectName'] ?? 'PROJETO').toUpperCase(),
+child: Text(
+                  (pData['nome'] ?? pData['projectName'] ?? 'AMBIENTE').toUpperCase(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                 ),

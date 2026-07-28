@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../core/theme.dart';
 
 class Editorcamento extends StatefulWidget {
   final String orcamentoId;
@@ -179,12 +180,17 @@ class _EditorcamentoState extends State<Editorcamento> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 123, 123, 123),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
+    final cardBg = isDark ? DellalioTheme.darkSurface : Colors.white;
+    final textColor = isDark ? Colors.white : Colors.black87;
 
+    return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text('EDITAR CLIENTE E PROJETO'),
-        backgroundColor: const Color.fromARGB(255, 98, 80, 63),
+        backgroundColor: petroleoColor,
+        foregroundColor: Colors.white,
       ),
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
@@ -246,245 +252,238 @@ if (!_initialized) {
   });
 }
            
-              return Scaffold(
-                bottomNavigationBar: SizedBox(
-                  height: 60,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      // Remove o arredondamento definindo o BorderRadius como zero
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                      ),
-                      // Remove a sombra padrão para ficar mais plano
-                      elevation: 0,
+              return Column(
+                children: [
+                  Expanded(
+                    child: ListView(
+                      children: [
+                        Container(
+                          height: 200,
+                          decoration: const BoxDecoration(
+                            color: petroleoColor,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(14),
+                            child: Image.asset(
+                              'assets/imagens/logo/logo ld.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+
+                        Form(
+                          key: _formKey,
+                          child: GridView(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(20),
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 400,
+                                  childAspectRatio: 4,
+                                  crossAxisSpacing: 20,
+                                  mainAxisSpacing: 20,
+                                ),
+                            children: [
+                              _buildTextField(_nameController, 'NOME DO CLIENTE', isDark),
+                              _buildTextField(
+                                _projectNameController,
+                                'NOME DO PROJETO',
+                                isDark,
+                              ),
+                              _buildTextField(
+                                _phoneController,
+                                'TELEFONE',
+                                isDark,
+                                formatters: [_phoneFormatter],
+                              ),
+                              _buildTextField(_emailController, 'E-MAIL', isDark),
+                              _buildTextField(
+                                _documentController,
+                                'CPF / CNPJ',
+                                isDark,
+                                formatters: [_cpfCnpjFormatter],
+                              ),
+                              _buildTextField(_addressController, 'ENDEREÇO', isDark),
+                              _buildTextField(_valorController, 'VALOR', isDark),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 30),
+                        Divider(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // LADO ESQUERDO: PDFs
+                            Expanded(
+                              child: ExpansionTile(
+                                initiallyExpanded: true,
+                                leading: const Icon(
+                                  Icons.picture_as_pdf,
+                                  color: Colors.red,
+                                ),
+                                title: Text("Documentos PDF",
+                                    style: TextStyle(color: textColor)),
+                                children: [
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.all(10),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2,
+                                          childAspectRatio: 3,
+                                          crossAxisSpacing: 5,
+                                          mainAxisSpacing: 5,
+                                        ),
+                                    itemCount:
+                                        (pData['files'] as List?)?.length ?? 0,
+                                    itemBuilder: (context, i) {
+                                      final f = pData['files'][i] as Map;
+                                      return Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: isDark ? Colors.white24 : Colors.grey.shade300,
+                                          ),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: ListTile(
+                                          dense: true,
+                                          title: Text(
+                                            f['name'] ?? 'Arquivo',
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(fontSize: 12, color: textColor),
+                                          ),
+                                          trailing: IconButton(
+                                            icon: const Icon(
+                                              Icons.delete,
+                                              size: 16,
+                                              color: Colors.red,
+                                            ),
+                                            onPressed: () =>
+                                                _deleteFile(pDoc.id, 'files', f),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text("Adicionar PDF"),
+                                    onPressed: () => _uploadAndAddFile(
+                                      pDoc.id,
+                                      'pdf',
+                                      'files',
+                                      true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 20),
+                            // LADO DIREITO: FOTOS
+                            Expanded(
+                              child: ExpansionTile(
+                                initiallyExpanded: true,
+                                leading: const Icon(
+                                  Icons.image,
+                                  color: Colors.blue,
+                                ),
+                                title: Text("Galeria de Fotos",
+                                    style: TextStyle(color: textColor)),
+                                children: [
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.all(10),
+                                    gridDelegate:
+                                        const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 3,
+                                          crossAxisSpacing: 5,
+                                          mainAxisSpacing: 5,
+                                        ),
+                                    itemCount:
+                                        (pData['galleryUrls'] as List?)?.length ?? 0,
+                                    itemBuilder: (context, i) {
+                                      final url = pData['galleryUrls'][i];
+                                      return Stack(
+                                        children: [
+                                          Image.network(
+                                            url,
+                                            fit: BoxFit.cover,
+                                            width: 80,
+                                            height: 80,
+                                          ),
+                                          Positioned(
+                                            right: 0,
+                                            top: 0,
+                                            child: IconButton(
+                                              icon: const Icon(
+                                                Icons.delete,
+                                                size: 16,
+                                                color: Colors.white,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: Colors.black,
+                                                    blurRadius: 2,
+                                                  ),
+                                                ],
+                                              ),
+                                              onPressed: () => _deleteFile(
+                                                pDoc.id,
+                                                'galleryUrls',
+                                                url,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                  TextButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text("Adicionar Foto"),
+                                    onPressed: () => _uploadAndAddFile(
+                                      pDoc.id,
+                                      'image',
+                                      'galleryUrls',
+                                      true,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 30),
+                        const SizedBox(height: 50),
+                      ],
                     ),
-                    onPressed: () => _updateClient(pDoc.id),
-                    child: const Text(
-                      'SALVAR ALTERAÇÕES',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  SizedBox(
+                    height: 60,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () => _updateClient(pDoc.id),
+                      child: const Text(
+                        'SALVAR ALTERAÇÕES',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                body: ListView(
-                  children: [
-                    Container(
-                      height: 200,
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 98, 80, 63),
-                      ),
-
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Image.asset(
-                          'assets/imagens/logo/logo ld.png',
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
-
-                    Form(
-                      key: _formKey,
-                      child: GridView(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(20),
-                        gridDelegate:
-                            const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 400,
-                              childAspectRatio: 4,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                            ),
-                        children: [
-                          _buildTextField(_nameController, 'NOME DO CLIENTE'),
-                          _buildTextField(
-                            _projectNameController,
-                            'NOME DO PROJETO',
-                          ),
-                          _buildTextField(
-                            _phoneController,
-                            'TELEFONE',
-                            formatters: [_phoneFormatter],
-                          ),
-                          _buildTextField(_emailController, 'E-MAIL'),
-                          _buildTextField(
-                            _documentController,
-                            'CPF / CNPJ',
-                            formatters: [_cpfCnpjFormatter],
-                          ),
-                          _buildTextField(_addressController, 'ENDEREÇO'),
-                          _buildTextField(_valorController, 'VALOR'),
-
-                          
-
-                          
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
-                    const Divider(),
-                    const SizedBox(height: 10),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // LADO ESQUERDO: PDFs
-                        Expanded(
-                          child: ExpansionTile(
-                            initiallyExpanded:
-                                true, // Começa aberto, mas pode fechar
-                            leading: const Icon(
-                              Icons.picture_as_pdf,
-                              color: Colors.red,
-                            ),
-                            title: const Text("Documentos PDF"),
-                            children: [
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(10),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount:
-                                          2, // 2 por linha dentro da coluna
-                                      childAspectRatio: 3,
-                                      crossAxisSpacing: 5,
-                                      mainAxisSpacing: 5,
-                                    ),
-                                itemCount:
-                                    (pData['files'] as List?)?.length ?? 0,
-                                itemBuilder: (context, i) {
-                                  final f = pData['files'][i] as Map;
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: ListTile(
-                                      dense: true,
-                                      title: Text(
-                                        f['name'] ?? 'Arquivo',
-                                        overflow: TextOverflow.ellipsis,
-                                        style: const TextStyle(fontSize: 12),
-                                      ),
-                                      trailing: IconButton(
-                                        icon: const Icon(
-                                          Icons.delete,
-                                          size: 16,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () =>
-                                            _deleteFile(pDoc.id, 'files', f),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              TextButton.icon(
-                                icon: const Icon(Icons.add),
-                                label: const Text("Adicionar PDF"),
-                                onPressed: () => _uploadAndAddFile(
-                                  pDoc.id,
-                                  'pdf',
-                                  'files',
-                                  true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        const SizedBox(
-                          width: 20,
-                        ), // Espaçamento entre as colunas
-                        // LADO DIREITO: FOTOS
-                        Expanded(
-                          child: ExpansionTile(
-                            initiallyExpanded: true,
-                            leading: const Icon(
-                              Icons.image,
-                              color: Colors.blue,
-                            ),
-                            title: const Text("Galeria de Fotos"),
-                            children: [
-                              GridView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: const EdgeInsets.all(10),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 3, // Menores, 3 por linha
-                                      crossAxisSpacing: 5,
-                                      mainAxisSpacing: 5,
-                                    ),
-                                itemCount:
-                                    (pData['galleryUrls'] as List?)?.length ??
-                                    0,
-                                itemBuilder: (context, i) {
-                                  final url = pData['galleryUrls'][i];
-                                  return Stack(
-                                    children: [
-                                      Image.network(
-                                        url,
-                                        fit: BoxFit.cover,
-                                        width: 80,
-                                        height: 80,
-                                      ),
-                                      Positioned(
-                                        right: 0,
-                                        top: 0,
-                                        child: IconButton(
-                                          icon: const Icon(
-                                            Icons.delete,
-                                            size: 16,
-                                            color: Colors.white,
-                                            shadows: [
-                                              Shadow(
-                                                color: Colors.black,
-                                                blurRadius: 2,
-                                              ),
-                                            ],
-                                          ),
-                                          onPressed: () => _deleteFile(
-                                            pDoc.id,
-                                            'galleryUrls',
-                                            url,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              TextButton.icon(
-                                icon: const Icon(Icons.add),
-                                label: const Text("Adicionar Foto"),
-                                onPressed: () => _uploadAndAddFile(
-                                  pDoc.id,
-                                  'image',
-                                  'galleryUrls',
-                                  true,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                       
-                      ],
-                    ),
-
-                    const SizedBox(height: 30),
-                    
-                    const SizedBox(height: 50),
-                  ],
-                ),
+                ],
               );
             },
           );
@@ -495,32 +494,41 @@ if (!_initialized) {
 
   Widget _buildTextField(
     TextEditingController controller,
-    String label, {
+    String label,
+    bool isDark, {
     List<TextInputFormatter>? formatters,
   }) {
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final labelColor = isDark ? DellalioTheme.accentGold : petroleoColor;
+    final fillColor = isDark ? DellalioTheme.darkSurface : Colors.white;
+    final borderColor = isDark ? Colors.white24 : const Color(0xFFBDBDBD);
+    final focusedBorderColor = isDark ? DellalioTheme.accentGold : petroleoColor;
+
     return TextFormField(
       controller: controller,
       inputFormatters: formatters,
-      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+      style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(
-          color: Colors.black,
-          fontWeight: FontWeight.bold,
+        labelStyle: TextStyle(
+          color: labelColor,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1,
+          fontSize: 13,
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: fillColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.grey),
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.0),
-          borderSide: const BorderSide(color: Colors.black, width: 2.0),
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: focusedBorderColor, width: 2.0),
         ),
       ),
     );
