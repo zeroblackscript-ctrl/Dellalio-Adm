@@ -5,6 +5,26 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.4.2</title>
+      <description>
+        - Correção: navegação ao clicar em projetos restaurada para editor de ambientes
+        - Cards na grid agora mostram nome do ambiente em vez de projectName
+        - Tela de edição de orçamento atualizada com tema dark/light completo
+        - Melhorias visuais e correções gerais
+      </description>
+      <pubDate>Mon, 28 Jul 2026 00:10:00 -0300</pubDate>
+      <sparkle:version>1.4.2.10</sparkle:version>
+      <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.2</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.2/DellalioCerebroADM_Setup_v1.4.2.exe"
+        sparkle:version="1.4.2.10"
+        sparkle:shortVersionString="1.4.2"
+length="22104040"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.4.1</title>
       <description>
         - Tema azul petróleo em todo o sistema
