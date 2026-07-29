@@ -285,7 +285,7 @@ class ViewClientScreen extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
             leading:
-                const Icon(Icons.description, color: Colors.blueGrey),
+                const Icon(Icons.description, color: Colors.black),
             title: Text(
                 ((doc as Map)['name'] ?? 'DOCUMENTO SEM NOME')
                     .toString()
@@ -398,7 +398,7 @@ class ViewClientScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                // color: Colors.black,
                 borderRadius: BorderRadius.circular(8),
                 border:
                     Border.all(color: Colors.grey.shade300),
@@ -437,7 +437,7 @@ class ViewClientScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // color: Colors.black54,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -454,7 +454,8 @@ class ViewClientScreen extends StatelessWidget {
                 Text(label,
                     style: const TextStyle(
                         fontSize: 14,
-                        color: Color.fromARGB(255, 78, 78, 78))),
+                        fontWeight: FontWeight.w600,
+                        color: petroleoColor)),
                 const SizedBox(height: 4),
                 Text(value,
                     style: const TextStyle(

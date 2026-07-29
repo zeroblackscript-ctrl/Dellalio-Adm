@@ -5,6 +5,23 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.4.3</title>
+      <description>
+        - Correções e melhorias gerais
+      </description>
+      <pubDate>Tue, 29 Jul 2026 13:40:00 -0300</pubDate>
+      <sparkle:version>1.4.3.11</sparkle:version>
+      <sparkle:shortVersionString>1.4.3</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.3</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.3/DellalioCerebroADM_Setup_v1.4.3.exe"
+        sparkle:version="1.4.3.11"
+        sparkle:shortVersionString="1.4.3"
+        length="0"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.4.2</title>
       <description>
         - Correção: navegação ao clicar em projetos restaurada para editor de ambientes

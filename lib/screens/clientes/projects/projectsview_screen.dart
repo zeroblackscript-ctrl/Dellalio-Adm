@@ -260,7 +260,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final String corCaixa = (project['corCaixa'] ?? '').toString();
     final String corAcab = (project['corAcab'] ?? '').toString();
     final List extras = project['extras'] ?? [];
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+            final bg = isDark ? DellalioTheme.darkBackground : const Color(0xFFF0F2F5);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -342,7 +343,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   title: Text("NENHUMA ESPECIFICAÇÃO CADASTRADA"))),
         if (corCaixa.isNotEmpty || project['valorCaixa'] != null)
           Card(
-            color: const Color(0xFFF3E9D2),
+            // color: bg,
             child: ListTile(
               leading: const Icon(Icons.inventory_2,
                   color: petroleoColor),
@@ -361,7 +362,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           ),
         if (corAcab.isNotEmpty || project['valorAcab'] != null)
           Card(
-            color: const Color(0xFFF3E9D2),
+            // color: bg,
             child: ListTile(
               leading:
                   const Icon(Icons.brush, color: petroleoColor),
@@ -402,16 +403,16 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         const SizedBox(height: 16),
         _sectionTitle("VALOR TOTAL"),
         Card(
-          color: Colors.green[50],
+          color: Colors.green,
           child: ListTile(
             leading:
-                const Icon(Icons.attach_money, color: Colors.green),
+                const Icon(Icons.attach_money, color: Colors.white),
             title: Text(
               "R\$ ${_formatMoney(project['valor'] ?? project['valorTotal'])}",
               style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
-                  color: Colors.green),
+                  color: Colors.white),
             ),
             subtitle: const Text("VALOR DO PROJETO"),
           ),

@@ -160,7 +160,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         fontSize: 11,
                         color: d == 'Dom' || d == 'Sáb'
                             ? Colors.red[300]
-                            : isDark ? Colors.white70 : Colors.grey[700],
+                            : isDark ? Colors.white70 : Colors.black87,
                       ),
                     ),
                   ),
@@ -285,10 +285,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                 Icon(Icons.event_busy, size: 56, color: Colors.grey[350]),
                 const SizedBox(height: 10),
                 Text('NENHUM COMPROMISSO',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 16, fontWeight: FontWeight.w500)),
+                    style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Text(DateFormat("dd 'de' MMMM", 'pt_BR').format(day),
-                    style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                    style: TextStyle(color: Colors.black54, fontSize: 13)),
               ],
             ),
           );
@@ -328,7 +328,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(color: grey100, borderRadius: BorderRadius.circular(12)),
                     child: Text('${sorted.length} COMPROMISSO${sorted.length != 1 ? 'S' : ''}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        style: TextStyle(fontSize: 12, color: Colors.black87)),
                   ),
                 ],
               ),
@@ -393,7 +393,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                 Container(
                                   width: double.infinity, padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(color: grey50, borderRadius: BorderRadius.circular(8)),
-                                  child: Text(info, style: TextStyle(fontSize: 13, color: Colors.grey[700], height: 1.4),
+                                  child: Text(info, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
                                       maxLines: 4, overflow: TextOverflow.ellipsis),
                                 ),
                               ],
@@ -555,18 +555,19 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Widget _dialogLabel(String text) {
-    return Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8));
+    return Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8));
   }
 
   Widget _dialogField({required TextEditingController controller, String hint = '', IconData? icon, bool enabled = true, int maxLines = 1, bool readOnly = false, VoidCallback? onTap}) {
     return TextField(
+      style: TextStyle(color: Colors.black),
       controller: controller, enabled: enabled, readOnly: readOnly, maxLines: maxLines, onTap: onTap,
       decoration: InputDecoration(
-        hintText: hint, hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+        hintText: hint, hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
         filled: true, fillColor: enabled ? Colors.grey[100] : Colors.grey[200],
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-        prefixIcon: icon != null ? Icon(icon, size: 20, color: Colors.grey[500]) : null,
+        prefixIcon: icon != null ? Icon(icon, size: 20, color: Colors.black54) : null,
       ),
     );
   }
@@ -585,9 +586,9 @@ class _AgendaScreenState extends State<AgendaScreen> {
             border: Border.all(color: sel ? color : Colors.transparent, width: 2),
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.flag, size: 20, color: sel ? color : Colors.grey[400]),
+            Icon(Icons.flag, size: 20, color: sel ? color : Colors.black38),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.w500, color: sel ? color : Colors.grey[600])),
+            Text(label, style: TextStyle(fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.w500, color: sel ? color : Colors.black87)),
           ]),
         ),
       ),
