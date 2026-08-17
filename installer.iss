@@ -28,7 +28,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 DisableProgramGroupPage=yes
 ; Remove as seguintes linhas para executar no modo administrativo (necessário para instaladores por máquina)
 PrivilegesRequired=lowest
-OutputDir=..\
+OutputDir=Releases
 OutputBaseFilename=DellalioCerebroADM_Setup_v1.4.4
 SetupIconFile=windows\runner\resources\app_icon.ico
 Compression=lzma
