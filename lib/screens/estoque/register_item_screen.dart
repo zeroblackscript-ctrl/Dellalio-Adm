@@ -34,7 +34,6 @@ class _RegisterItemScreenState extends State<RegisterItemScreen> {
   // Estilo personalizado para os campos de texto
   InputDecoration _inputDecoration(String label) => InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: Colors.white70),
     enabledBorder: const UnderlineInputBorder(
       borderSide: BorderSide(color: Color(0xFFD4AF37)),
     ),

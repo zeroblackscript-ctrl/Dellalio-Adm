@@ -2,7 +2,7 @@
 ; Gerado automaticamente para distribuição com auto_updater (WinSparkle)
 
 #define MyAppName "Dellalio Cerebro ADM"
-#define MyAppVersion "1.4.3"
+#define MyAppVersion "1.4.4"
 #define MyAppPublisher "Dellalio Moveis Planejados"
 #define MyAppURL "https://github.com/zeroblackscript-ctrl/Dellalio-Adm"
 #define MyAppExeName "cerebro_adm.exe"
@@ -29,7 +29,7 @@ DisableProgramGroupPage=yes
 ; Remove as seguintes linhas para executar no modo administrativo (necessário para instaladores por máquina)
 PrivilegesRequired=lowest
 OutputDir=..\
-OutputBaseFilename=DellalioCerebroADM_Setup_v1.4.3
+OutputBaseFilename=DellalioCerebroADM_Setup_v1.4.4
 SetupIconFile=windows\runner\resources\app_icon.ico
 Compression=lzma
 SolidCompression=yes
