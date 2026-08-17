@@ -52,7 +52,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
 
   InputDecoration _inputDecoration(String label) => InputDecoration(
     labelText: label,
-    labelStyle: const TextStyle(color: Colors.white70),
     enabledBorder: const UnderlineInputBorder(
       borderSide: BorderSide(color: Color(0xFFD4AF37)),
     ),

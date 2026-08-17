@@ -555,12 +555,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Widget _dialogLabel(String text) {
-    return Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8));
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1C1B1F), letterSpacing: 0.8));
   }
 
   Widget _dialogField({required TextEditingController controller, String hint = '', IconData? icon, bool enabled = true, int maxLines = 1, bool readOnly = false, VoidCallback? onTap}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextField(
-      style: TextStyle(color: Colors.black),
+      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
       controller: controller, enabled: enabled, readOnly: readOnly, maxLines: maxLines, onTap: onTap,
       decoration: InputDecoration(
         hintText: hint, hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),

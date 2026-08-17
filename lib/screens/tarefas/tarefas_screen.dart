@@ -99,42 +99,47 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     final List<File> selectedMedia = [];
     if (!mounted) return;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1B1F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF49454F);
+    final dialogBg = isDark ? DellalioTheme.darkSurface : DellalioTheme.lightSurface;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, dialogSetState) => AlertDialog(
-          backgroundColor: DellalioTheme.darkSurface,
-          title: const Text("NOVA TAREFA", style: TextStyle(color: Colors.white)),
+          backgroundColor: dialogBg,
+          title: Text("NOVA TAREFA", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: titleCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "TÍTULO DA TAREFA")),
-              TextField(controller: obsCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "OBSERVAÇÕES"), maxLines: 2),
-              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)), trailing: const Icon(Icons.calendar_today, color: Colors.white), onTap: () async {
+              TextField(controller: titleCtrl, style: TextStyle(color: textColor), decoration: InputDecoration(labelText: "TÍTULO DA TAREFA", labelStyle: TextStyle(color: textColor))),
+              TextField(controller: obsCtrl, style: TextStyle(color: textColor), decoration: InputDecoration(labelText: "OBSERVAÇÕES", labelStyle: TextStyle(color: textColor)), maxLines: 2),
+              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: TextStyle(color: textColor)), trailing: Icon(Icons.calendar_today, color: textColor), onTap: () async {
                 DateTime? picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime(2030));
                 if (picked != null) dialogSetState(() => selectedDate = picked);
               }),
               DropdownButtonFormField<String>(
-                dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "NÍVEL DE URGÊNCIA:"),
+                dropdownColor: dialogBg, style: TextStyle(color: textColor),
+                decoration: InputDecoration(labelText: "NÍVEL DE URGÊNCIA:", labelStyle: TextStyle(color: textColor)),
                 initialValue: selectedUrgencia,
                 items: urgenciaOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) => dialogSetState(() => selectedUrgencia = val!),
               ),
               CheckboxListTile(
-                title: const Text("CRIAR PARA TODOS", style: TextStyle(color: Colors.white)),
+                title: Text("CRIAR PARA TODOS", style: TextStyle(color: textColor)),
                 value: criarParaTodos,
                 activeColor: DellalioTheme.accentGold,
                 onChanged: (val) => dialogSetState(() { criarParaTodos = val ?? false; if (criarParaTodos) selectedFuncionarioId = null; }),
               ),
               if (!criarParaTodos)
                 DropdownButtonFormField<String>(
-                  dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: "ATRIBUIR PARA:"),
+                  dropdownColor: dialogBg, style: TextStyle(color: textColor),
+                  decoration: InputDecoration(labelText: "ATRIBUIR PARA:", labelStyle: TextStyle(color: textColor)),
                   items: pessoas.map((p) => DropdownMenuItem(value: p.uid, child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"))).toList(),
                   onChanged: (val) => dialogSetState(() => selectedFuncionarioId = val),
                 ),
               const SizedBox(height: 16),
-              const Text("MÍDIAS (FOTOS, VÍDEOS, ÁUDIOS):", style: TextStyle(color: Colors.white70, fontSize: 12)),
+              Text("MÍDIAS (FOTOS, VÍDEOS, ÁUDIOS):", style: TextStyle(color: subTextColor, fontSize: 12)),
               const SizedBox(height: 8),
               if (selectedMedia.isNotEmpty)
                 Wrap(
@@ -269,31 +274,35 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     }
     if (!mounted) return;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1B1F);
+    final dialogBg = isDark ? DellalioTheme.darkSurface : DellalioTheme.lightSurface;
+
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, dialogSetState) => AlertDialog(
-          backgroundColor: DellalioTheme.darkSurface,
-          title: const Text("EDITAR TAREFA", style: TextStyle(color: Colors.white)),
+          backgroundColor: dialogBg,
+          title: Text("EDITAR TAREFA", style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: titleCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "TÍTULO DA TAREFA")),
-              TextField(controller: obsCtrl, style: const TextStyle(color: Colors.white), decoration: const InputDecoration(labelText: "OBSERVAÇÕES"), maxLines: 2),
-              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: const TextStyle(color: Colors.white)), trailing: const Icon(Icons.calendar_today, color: Colors.white), onTap: () async {
+              TextField(controller: titleCtrl, style: TextStyle(color: textColor), decoration: InputDecoration(labelText: "TÍTULO DA TAREFA", labelStyle: TextStyle(color: textColor))),
+              TextField(controller: obsCtrl, style: TextStyle(color: textColor), decoration: InputDecoration(labelText: "OBSERVAÇÕES", labelStyle: TextStyle(color: textColor)), maxLines: 2),
+              ListTile(title: Text("DATA LIMITE: ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}", style: TextStyle(color: textColor)), trailing: Icon(Icons.calendar_today, color: textColor), onTap: () async {
                 DateTime? picked = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime(2020), lastDate: DateTime(2030));
                 if (picked != null) dialogSetState(() => selectedDate = picked);
               }),
               DropdownButtonFormField<String>(
-                dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(labelText: "NÍVEL DE URGÊNCIA:"),
+                dropdownColor: dialogBg, style: TextStyle(color: textColor),
+                decoration: InputDecoration(labelText: "NÍVEL DE URGÊNCIA:", labelStyle: TextStyle(color: textColor)),
                 initialValue: selectedUrgencia,
                 items: urgenciaOptions.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
                 onChanged: (val) => dialogSetState(() => selectedUrgencia = val!),
               ),
               if (!isParaTodos)
                 DropdownButtonFormField<String>(
-                  dropdownColor: DellalioTheme.darkSurface, style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(labelText: "ATRIBUIR PARA:"),
+                  dropdownColor: dialogBg, style: TextStyle(color: textColor),
+                  decoration: InputDecoration(labelText: "ATRIBUIR PARA:", labelStyle: TextStyle(color: textColor)),
                   initialValue: selectedFuncionarioId,
                   items: pessoas.map((p) => DropdownMenuItem(value: p.uid, child: Text(p.fullName.isNotEmpty ? p.fullName : "Sem nome"))).toList(),
                   onChanged: (val) => dialogSetState(() => selectedFuncionarioId = val),
@@ -367,28 +376,33 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen> with SingleTick
     final bool isParaTodos = data['paraTodos'] == true;
     final List<dynamic> mediaUrls = data['mediaUrls'] is List ? data['mediaUrls'] : [];
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1B1F);
+    final subTextColor = isDark ? Colors.white70 : const Color(0xFF49454F);
+    final detailBg = isDark ? DellalioTheme.darkSurface : DellalioTheme.lightSurface;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: DellalioTheme.darkSurface,
-        title: Text((data['title'] ?? 'TAREFA').toString().toUpperCase(), style: const TextStyle(color: Colors.white)),
+        backgroundColor: detailBg,
+        title: Text((data['title'] ?? 'TAREFA').toString().toUpperCase(), style: TextStyle(color: textColor)),
         content: SingleChildScrollView(
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text("OBSERVAÇÕES:", style: TextStyle(fontWeight: FontWeight.bold, color: DellalioTheme.textSecondary)),
-            Text((data['observacoes'] ?? '—').toString(), style: const TextStyle(color: Colors.white)),
+            Text("OBSERVAÇÕES:", style: TextStyle(fontWeight: FontWeight.bold, color: subTextColor)),
+            Text((data['observacoes'] ?? '—').toString(), style: TextStyle(color: textColor)),
             const SizedBox(height: 10),
-            Text("PRAZO: ${data['deadline'] ?? '--/--/--'}", style: const TextStyle(color: Colors.white)),
-            Text("URGÊNCIA: ${data['urgencia'] ?? '—'}", style: const TextStyle(color: Colors.white)),
-            if (isParaTodos) const Text("ATRIBUÍDO PARA: TODOS", style: TextStyle(color: Colors.white)) else
+            Text("PRAZO: ${data['deadline'] ?? '--/--/--'}", style: TextStyle(color: textColor)),
+            Text("URGÊNCIA: ${data['urgencia'] ?? '—'}", style: TextStyle(color: textColor)),
+            if (isParaTodos) Text("ATRIBUÍDO PARA: TODOS", style: TextStyle(color: textColor)) else
               FutureBuilder<Person?>(
                 future: _getSenderPerson(data['assignedTo']?.toString()),
-                builder: (context, snap) { final name = snap.data?.fullName ?? data['assignedTo'] ?? '—'; return Text("ATRIBUÍDO PARA: $name", style: const TextStyle(color: Colors.white)); },
+                builder: (context, snap) { final name = snap.data?.fullName ?? data['assignedTo'] ?? '—'; return Text("ATRIBUÍDO PARA: $name", style: TextStyle(color: textColor)); },
               ),
-            Text("CRIADO POR: ${data['createdByName'] ?? '—'}", style: const TextStyle(color: Colors.white)),
-            if (criadoEm.isNotEmpty) Text("CRIADO EM: $criadoEm", style: const TextStyle(color: Colors.white)),
+            Text("CRIADO POR: ${data['createdByName'] ?? '—'}", style: TextStyle(color: textColor)),
+            if (criadoEm.isNotEmpty) Text("CRIADO EM: $criadoEm", style: TextStyle(color: textColor)),
             if (mediaUrls.isNotEmpty) ...[
               const SizedBox(height: 12),
-              const Text("MÍDIAS:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70)),
+              Text("MÍDIAS:", style: TextStyle(fontWeight: FontWeight.bold, color: subTextColor)),
               const SizedBox(height: 8),
               SizedBox(
                 height: 120,
