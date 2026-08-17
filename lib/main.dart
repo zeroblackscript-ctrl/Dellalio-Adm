@@ -11,10 +11,10 @@ import 'core/theme.dart';
 import 'firebase_options.dart';
 
 /// URL do AppCast (feed de atualizações) para o auto_updater.
-/// Aponta para o arquivo appcast.xml hospedado no GitHub Releases.
+/// Aponta para o Firebase Hosting (mais confiável que raw.githubusercontent.com).
 /// O AppCast segue o protocolo Sparkle (WinSparkle no Windows).
 /// Para desabilitar a verificação de updates, deixe como string vazia.
-const String kUpdateFeedUrl = 'https://raw.githubusercontent.com/zeroblackscript-ctrl/Dellalio-Adm/master/appcast.xml';
+const String kUpdateFeedUrl = 'https://dellalio-moveis-planejados.web.app/appcast.xml';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
