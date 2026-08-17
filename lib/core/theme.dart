@@ -105,6 +105,7 @@ class DellalioTheme {
 
   static ThemeData get lightTheme {
     return ThemeData.light().copyWith(
+      useMaterial3: false,
       scaffoldBackgroundColor: lightBackground,
       primaryColor: petroleoColor,
       colorScheme: const ColorScheme.light(
@@ -113,19 +114,12 @@ class DellalioTheme {
         secondary: accentGold,
         onSecondary: Colors.black,
         surface: lightSurface,
-        onSurface: Color(0xFF1C1B1F),
-        onSurfaceVariant: Color(0xFF49454F),
+        onSurface: Colors.black87,
+        onSurfaceVariant: Colors.black54,
       ),
-      textTheme: const TextTheme(
-        bodyLarge: TextStyle(color: Color(0xFF1C1B1F), fontSize: 16),
-        bodyMedium: TextStyle(color: Color(0xFF1C1B1F), fontSize: 14),
-        bodySmall: TextStyle(color: Color(0xFF49454F), fontSize: 12),
-        titleLarge: TextStyle(color: Color(0xFF1C1B1F), fontSize: 22, fontWeight: FontWeight.w600),
-        titleMedium: TextStyle(color: Color(0xFF1C1B1F), fontSize: 16, fontWeight: FontWeight.w500),
-        titleSmall: TextStyle(color: Color(0xFF1C1B1F), fontSize: 14, fontWeight: FontWeight.w500),
-        labelLarge: TextStyle(color: Color(0xFF1C1B1F), fontSize: 14, fontWeight: FontWeight.w500),
-        labelMedium: TextStyle(color: Color(0xFF49454F), fontSize: 12),
-        labelSmall: TextStyle(color: Color(0xFF49454F), fontSize: 11),
+      textTheme: Typography.material2018().black.apply(
+        bodyColor: Colors.black87,
+        displayColor: Colors.black87,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: petroleoColor,
