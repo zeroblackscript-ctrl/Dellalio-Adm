@@ -5,6 +5,26 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.4.4</title>
+      <description>
+        - Correção: texto dos campos de formulário visível no modo claro
+        - Correção: diálogos de tarefas e agenda adaptados ao tema claro/escuro
+        - Correção: labels de formulários de estoque usam cor do tema
+        - Tema claro totalmente funcional em todas as telas
+      </description>
+      <pubDate>Sun, 17 Aug 2026 14:00:00 -0300</pubDate>
+      <sparkle:version>1.4.4.12</sparkle:version>
+      <sparkle:shortVersionString>1.4.4</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.4</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.4/DellalioCerebroADM_Setup_v1.4.4.exe"
+        sparkle:version="1.4.4.12"
+        sparkle:shortVersionString="1.4.4"
+        length="22223294"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.4.3</title>
       <description>
         - Correções e melhorias gerais
