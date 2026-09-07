@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../../core/dellalio_kit.dart';
 import '../../../core/theme.dart';
 
 class CreateProjectScreen extends StatefulWidget {
@@ -228,8 +229,8 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       builder: (context, cSnap) {
         if (!cSnap.hasData || !cSnap.data!.exists) {
           return Scaffold(
-            appBar: AppBar(backgroundColor: petroleoColor),
-            body: const Center(child: CircularProgressIndicator()),
+            backgroundColor: inkPageBg,
+            body: const Center(child: CircularProgressIndicator(color: dellalioGold)),
           );
         }
 
@@ -238,8 +239,8 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
         if (!_initialized) {
           return Scaffold(
-            appBar: AppBar(backgroundColor: petroleoColor),
-            body: const Center(child: CircularProgressIndicator()),
+            backgroundColor: inkPageBg,
+            body: const Center(child: CircularProgressIndicator(color: dellalioGold)),
           );
         }
 
@@ -249,40 +250,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
         return Scaffold(
           key: _scaffoldKey,
-          appBar: AppBar(
-            title: const Text('CRIAR NOVO PROJETO',
-                style: TextStyle(
-                    fontWeight: FontWeight.bold, color: Colors.white)),
-            backgroundColor: petroleoColor,
-          ),
-          bottomNavigationBar: SizedBox(
-            height: 60,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF43A047),
-                foregroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.zero),
-                elevation: 0,
-              ),
-              onPressed: _isLoading ? null : _saveNewProject,
-              child: const Text('CRIAR PROJETO',
-                  style: TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-          ),
+          backgroundColor: inkPageBg,
           body: Column(
             children: [
-              Container(
-                width: double.infinity,
-                height: 160,
-                decoration: const BoxDecoration(color: petroleoColor),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Image.asset('assets/imagens/logo/logo ld.png',
-                      fit: BoxFit.contain),
-                ),
-              ),
+              const DellalioSubHeader(title: "Criar novo projeto"),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(20),
@@ -292,10 +263,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("CLIENTE (INFO BÁSICA)",
+                          Text("Cliente (info básica)",
                               style: TextStyle(
-                                  color: petroleoColor,
-                                  fontWeight: FontWeight.bold,
+                                  color: dellalioLabel,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 14)),
                           const SizedBox(height: 10),
                           Row(
@@ -313,10 +284,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                             ],
                           ),
                           const SizedBox(height: 25),
-                          const Text("DETALHES DO PROJETO",
+                          Text("Detalhes do projeto",
                               style: TextStyle(
-                                  color: petroleoColor,
-                                  fontWeight: FontWeight.bold,
+                                  color: dellalioLabel,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 14)),
                           const SizedBox(height: 10),
                           _buildTextField(
@@ -324,10 +295,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
                           // Seletor de cor do projeto
                           const SizedBox(height: 8),
-                          const Text("COR DO CARD DO PROJETO",
+                          Text("Cor do card do projeto",
                               style: TextStyle(
-                                  color: petroleoColor,
-                                  fontWeight: FontWeight.bold,
+                                  color: panelSlate,
+                                  fontWeight: FontWeight.w600,
                                   fontSize: 13)),
                           const SizedBox(height: 6),
                           _buildColorPicker(),
@@ -339,16 +310,17 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 4),
                             decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius:
-                                    BorderRadius.circular(8)),
+                                color: inkSurface,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: hairline)),
                             child: DropdownButtonFormField<String>(
                               initialValue: _selectedEnvironment,
-                              decoration: const InputDecoration(
-                                labelText: 'AMBIENTE DO PROJETO',
+                              dropdownColor: inkSurface,
+                              style: TextStyle(color: panelIvory, fontSize: 13.5),
+                              decoration: InputDecoration(
+                                labelText: 'Ambiente do projeto',
                                 labelStyle: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold),
+                                    color: panelSlate, fontSize: 13),
                                 border: InputBorder.none,
                               ),
                               items: _environmentOptions
@@ -387,9 +359,10 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
                                   margin:
                                       const EdgeInsets.symmetric(vertical: 8),
                                   decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: inkSurface,
                                       borderRadius:
-                                          BorderRadius.circular(8)),
+                                          BorderRadius.circular(8),
+                                      border: Border.all(color: hairline)),
                                   child: _buildDateTile(
                                       'ENTREGA',
                                       _deliveryDate,
@@ -403,17 +376,18 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
                           DropdownButtonFormField<String>(
                             initialValue: statusToUse,
-                            decoration: const InputDecoration(
-                              labelText: 'STATUS DO PROJETO',
+                            decoration: InputDecoration(
+                              labelText: 'Status do projeto',
                               labelStyle: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.bold),
+                                  color: panelSlate, fontSize: 13),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: inkSurface,
                               border: OutlineInputBorder(
                                   borderRadius: BorderRadius.all(
                                       Radius.circular(8))),
                             ),
+                            dropdownColor: inkSurface,
+                            style: TextStyle(color: panelIvory, fontSize: 13.5),
                             items: const [
                               DropdownMenuItem(
                                   value: 'conferencia',
@@ -511,6 +485,20 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
               ),
             ],
           ),
+          bottomNavigationBar: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: hairline)),
+            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: dellalioGold))
+                : DellalioGoldButton(
+                    label: "Criar projeto",
+                    icon: Icons.add,
+                    fullWidth: true,
+                    onPressed: _saveNewProject,
+                  ),
+          ),
         );
       },
     );
@@ -566,25 +554,12 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(8)),
-      child: TextFormField(
-        controller: controller,
-        inputFormatters: formatters,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold, color: Colors.black87),
-          border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16, vertical: 12),
-        ),
-      ),
+    return DellalioFormField(
+      controller: controller,
+      label: label,
+      inputFormatters: formatters,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
     );
   }
 
@@ -598,14 +573,15 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       title: Text(label,
-          style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          style: TextStyle(
+              fontWeight: FontWeight.w600, fontSize: 12, color: panelSlate)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(formattedDate, style: const TextStyle(fontSize: 12)),
+          Text(formattedDate,
+              style: TextStyle(fontSize: 12, color: panelIvory)),
           const Icon(Icons.calendar_today,
-              size: 16, color: petroleoColor),
+              size: 16, color: dellalioGold),
         ],
       ),
       onTap: () async {
@@ -626,9 +602,9 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
       return Container(
         height: 50,
         alignment: Alignment.center,
-        child: const Text("NENHUM ARQUIVO",
+        child: Text("Nenhum arquivo",
             style: TextStyle(
-                color: Colors.black54, fontSize: 12)),
+                color: panelSlateDim, fontSize: 12)),
       );
     }
 
@@ -652,23 +628,26 @@ class _CreateProjectScreenState extends State<CreateProjectScreen> {
 
         return Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: hairline),
             borderRadius: BorderRadius.circular(4),
-            color: Colors.white,
+            color: inkSurface,
           ),
-          child: ListTile(
-            dense: true,
-            title: Text(name,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 10, color: Colors.black87)),
-            trailing: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Icon(Icons.delete, size: 14, color: color),
-              onPressed: _isLoading
-                  ? null
-                  : () => _deleteFile(type, f),
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              dense: true,
+              title: Text(name,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 10, color: panelIvory)),
+              trailing: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(Icons.delete, size: 14, color: color),
+                onPressed: _isLoading
+                    ? null
+                    : () => _deleteFile(type, f),
+              ),
             ),
           ),
         );

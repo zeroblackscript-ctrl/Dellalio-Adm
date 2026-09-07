@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../core/dellalio_kit.dart';
 import '../../core/theme.dart';
 
 class EditClientScreen extends StatefulWidget {
@@ -144,24 +144,17 @@ class _EditClientScreenState extends State<EditClientScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0D0D0D) : const Color(0xFFF0F2F5);
-
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance.collection('clients').doc(widget.clientId).snapshots(),
       builder: (context, cSnap) {
         if (!cSnap.hasData) {
-          return Scaffold(
-            backgroundColor: bgColor,
-            appBar: AppBar(title: const Text('EDITAR CLIENTE'), backgroundColor: petroleoColor),
-            body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+          return _buildScaffoldShell(
+            child: const Center(child: CircularProgressIndicator(color: dellalioGold)),
           );
         }
         if (!cSnap.data!.exists) {
-          return Scaffold(
-            backgroundColor: bgColor,
-            appBar: AppBar(title: const Text('EDITAR CLIENTE'), backgroundColor: petroleoColor),
-            body: const Center(child: Text('CLIENTE NÃO ENCONTRADO.\nELE PODE TER SIDO EXCLUÍDO.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: 16))),
+          return _buildScaffoldShell(
+            child: Center(child: Text('Cliente não encontrado.\nEle pode ter sido excluído.', textAlign: TextAlign.center, style: TextStyle(color: panelSlate, fontSize: 16))),
           );
         }
 
@@ -169,40 +162,16 @@ class _EditClientScreenState extends State<EditClientScreen> {
         _initializeData(cData);
 
         if (!_initialized) {
-          return Scaffold(
-            backgroundColor: bgColor,
-            appBar: AppBar(title: const Text('EDITAR CLIENTE'), backgroundColor: petroleoColor),
-            body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+          return _buildScaffoldShell(
+            child: const Center(child: CircularProgressIndicator(color: dellalioGold)),
           );
         }
 
         return Scaffold(
-          backgroundColor: bgColor,
-          appBar: AppBar(
-            title: const Text('EDITAR CLIENTE', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            backgroundColor: petroleoColor,
-          ),
-          bottomNavigationBar: SizedBox(
-            height: 60,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF43A047), foregroundColor: Colors.white,
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero), elevation: 0),
-              onPressed: _isLoading ? null : _saveClient,
-              child: _isLoading
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('SALVAR ALTERAÇÕES', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-          ),
+          backgroundColor: inkPageBg,
           body: Column(
             children: [
-              Container(
-                width: double.infinity, height: 160,
-                decoration: const BoxDecoration(color: petroleoColor),
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Image.asset('assets/imagens/logo/logo ld.png', fit: BoxFit.contain),
-                ),
-              ),
+              const DellalioSubHeader(title: "Editar cliente"),
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
@@ -215,35 +184,77 @@ class _EditClientScreenState extends State<EditClientScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("DADOS DO CLIENTE",
-                                  style: TextStyle(color: isDark ? Colors.white70 : petroleoColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("Dados do cliente",
+                                  style: TextStyle(color: dellalioLabel, fontWeight: FontWeight.w600, fontSize: 14)),
                               const SizedBox(height: 10),
-                              _buildTextField(_nameController, 'NOME DO CLIENTE', required: true),
+                              DellalioFormField(
+                                controller: _nameController,
+                                label: "Nome do cliente",
+                                icon: Icons.person_outline,
+                                validator: (v) => (v == null || v.isEmpty) ? "Campo obrigatório" : null,
+                              ),
+                              const SizedBox(height: 12),
                               Row(children: [
-                                Expanded(child: _buildTextField(_phoneController, 'TELEFONE', formatters: [_phoneFormatter])),
+                                Expanded(child: DellalioFormField(
+                                  controller: _phoneController,
+                                  label: "Telefone",
+                                  icon: Icons.phone_outlined,
+                                  inputFormatters: [_phoneFormatter],
+                                )),
                                 const SizedBox(width: 15),
-                                Expanded(child: _buildTextField(_documentController, 'CPF / CNPJ', formatters: [_cpfCnpjFormatter])),
+                                Expanded(child: DellalioFormField(
+                                  controller: _documentController,
+                                  label: "CPF / CNPJ",
+                                  icon: Icons.badge_outlined,
+                                  inputFormatters: [_cpfCnpjFormatter],
+                                )),
                               ]),
-                              _buildTextField(_emailController, 'E-MAIL'),
+                              const SizedBox(height: 12),
+                              DellalioFormField(
+                                controller: _emailController,
+                                label: "E-mail",
+                                icon: Icons.email_outlined,
+                              ),
                               const SizedBox(height: 20),
-                              Text("ENDEREÇO",
-                                  style: TextStyle(color: isDark ? Colors.white70 : petroleoColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("Endereço",
+                                  style: TextStyle(color: dellalioLabel, fontWeight: FontWeight.w600, fontSize: 14)),
                               const SizedBox(height: 10),
                               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Expanded(child: _buildTextField(_cepController, 'CEP', formatters: [_cepFormatter],
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (value) { if (value.length == 9) _buscarEnderecoPorCep(value); },
-                                    suffixIcon: _isSearchingCep
-                                        ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
-                                        : IconButton(icon: const Icon(Icons.search), onPressed: () => _buscarEnderecoPorCep(_cepController.text)))),
+                                Expanded(child: DellalioFormField(
+                                  controller: _cepController,
+                                  label: "CEP",
+                                  icon: Icons.location_on_outlined,
+                                  inputFormatters: [_cepFormatter],
+                                  keyboardType: TextInputType.number,
+                                  onChanged: (value) { if (value.length == 9) _buscarEnderecoPorCep(value); },
+                                  suffixIcon: _isSearchingCep
+                                      ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
+                                      : IconButton(icon: const Icon(Icons.search), onPressed: () => _buscarEnderecoPorCep(_cepController.text)),
+                                )),
                               ]),
-                              _buildTextField(_addressController, 'ENDEREÇO (RUA, BAIRRO, CIDADE/UF)'),
-                              _buildTextField(_numberController, 'NÚMERO', focusNode: _numberFocusNode),
+                              const SizedBox(height: 12),
+                              DellalioFormField(
+                                controller: _addressController,
+                                label: "Endereço (rua, bairro, cidade/UF)",
+                                icon: Icons.home_outlined,
+                              ),
+                              const SizedBox(height: 12),
+                              DellalioFormField(
+                                controller: _numberController,
+                                label: "Número",
+                                icon: Icons.pin_outlined,
+                                focusNode: _numberFocusNode,
+                              ),
                               const SizedBox(height: 20),
-                              Text("OBSERVAÇÕES",
-                                  style: TextStyle(color: isDark ? Colors.white70 : petroleoColor, fontWeight: FontWeight.bold, fontSize: 14)),
+                              Text("Observações",
+                                  style: TextStyle(color: dellalioLabel, fontWeight: FontWeight.w600, fontSize: 14)),
                               const SizedBox(height: 10),
-                              _buildTextField(_notesController, 'OBSERVAÇÕES', maxLines: 3),
+                              DellalioFormField(
+                                controller: _notesController,
+                                label: "Observações",
+                                icon: Icons.notes_outlined,
+                                maxLines: 3,
+                              ),
                               const SizedBox(height: 30),
                             ],
                           ),
@@ -255,35 +266,33 @@ class _EditClientScreenState extends State<EditClientScreen> {
               ),
             ],
           ),
+          bottomNavigationBar: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: hairline)),
+            ),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: dellalioGold))
+                : DellalioGoldButton(
+                    label: "Salvar alterações",
+                    icon: Icons.save_outlined,
+                    fullWidth: true,
+                    onPressed: _saveClient,
+                  ),
+          ),
         );
       },
     );
   }
 
-  Widget _buildTextField(
-    TextEditingController controller, String label, {
-    List<TextInputFormatter>? formatters,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    ValueChanged<String>? onChanged,
-    FocusNode? focusNode,
-    Widget? suffixIcon,
-    bool required = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-      child: TextFormField(
-        controller: controller, focusNode: focusNode,
-        inputFormatters: formatters, keyboardType: keyboardType, maxLines: maxLines, onChanged: onChanged,
-        validator: required ? (v) => (v == null || v.isEmpty) ? "CAMPO OBRIGATÓRIO" : null : null,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: suffixIcon,
-        ),
+  Widget _buildScaffoldShell({required Widget child}) {
+    return Scaffold(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Editar cliente"),
+          Expanded(child: child),
+        ],
       ),
     );
   }

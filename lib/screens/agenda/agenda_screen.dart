@@ -1,25 +1,20 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+
 import '../../core/theme.dart';
 
-const List<Color> _userColorPalette = [
-  Color(0xFFE53935),
-  Color(0xFF1E88E5),
-  Color(0xFF43A047),
-  Color(0xFFFB8C00),
-  Color(0xFF8E24AA),
-  Color(0xFF00ACC1),
-  Color(0xFFD81B60),
-  Color(0xFF3949AB),
-  Color(0xFF6D4C41),
-  Color(0xFF00897B),
-  Color(0xFFF4511E),
-  Color(0xFF5E35B1),
-  Color(0xFF039BE5),
-  Color(0xFF689F38),
-  Color(0xFFC0CA33),
+/// Paleta harmonizada de cores por usuário — reaproveita os tons já usados
+/// no resto do painel em vez de cores cruas do Material.
+final List<Color> _userColorPalette = [
+  dellalioGold,
+  panelRust,
+  navyAccent,
+  panelSage,
+  statusConferencia,
+  statusMontagem,
 ];
 
 Color getUserColor(String userId) {
@@ -32,6 +27,12 @@ String colorToHex(Color c) {
   final g = (c.g * 255).round().clamp(0, 255);
   final b = (c.b * 255).round().clamp(0, 255);
   return '#${r.toRadixString(16).padLeft(2, '0')}${g.toRadixString(16).padLeft(2, '0')}${b.toRadixString(16).padLeft(2, '0')}';
+}
+
+Color _colorFromHex(String? hex) {
+  if (hex == null || hex.isEmpty) return panelRust;
+  final parsed = int.tryParse(hex.replaceFirst('#', '0xff'));
+  return parsed != null ? Color(parsed) : panelRust;
 }
 
 class AgendaScreen extends StatefulWidget {
@@ -54,208 +55,279 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final firstDayOfMonth =
-        DateTime(_displayMonth.year, _displayMonth.month, 1);
-    final daysInMonth =
-        DateTime(_displayMonth.year, _displayMonth.month + 1, 0).day;
+    final firstDayOfMonth = DateTime(
+      _displayMonth.year,
+      _displayMonth.month,
+      1,
+    );
+    final daysInMonth = DateTime(
+      _displayMonth.year,
+      _displayMonth.month + 1,
+      0,
+    ).day;
     final startWeekday = firstDayOfMonth.weekday % 7;
 
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
-    final weekBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final cellBg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: GestureDetector(
-          onTap: () => _showMonthPicker(context),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+      backgroundColor: inkPageBg,
+      body: Stack(
+        children: [
+          Column(
             children: [
-              Text(
-                DateFormat('MMMM yyyy', 'pt_BR')
-                    .format(_displayMonth)
-                    .toUpperCase(),
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(34, 26, 34, 20),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () => _showMonthPicker(context),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            DateFormat(
+                              'MMMM yyyy',
+                              'pt_BR',
+                            ).format(_displayMonth),
+                            style: TextStyle(
+                              fontFamily: 'Fraunces',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 22,
+                              color: panelIvory,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.keyboard_arrow_down,
+                            size: 20,
+                            color: panelSlate,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    _ArrowButton(
+                      icon: Icons.chevron_left,
+                      onTap: () => setState(() {
+                        _displayMonth = DateTime(
+                          _displayMonth.year,
+                          _displayMonth.month - 1,
+                        );
+                      }),
+                    ),
+                    const SizedBox(width: 8),
+                    _ArrowButton(
+                      icon: Icons.chevron_right,
+                      onTap: () => setState(() {
+                        _displayMonth = DateTime(
+                          _displayMonth.year,
+                          _displayMonth.month + 1,
+                        );
+                      }),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0),
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 420,
+                      child: Column(
+                        children: [
+                          _buildWeekHeader(),
+                          Expanded(
+                            child: GridView.builder(
+                              padding: EdgeInsets.zero,
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 7,
+                                    childAspectRatio: 1.0,
+                                  ),
+                              itemCount: daysInMonth + startWeekday,
+                              itemBuilder: (context, index) {
+                                if (index < startWeekday) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        right: BorderSide(color: hairline),
+                                        bottom: BorderSide(color: hairline),
+                                      ),
+                                    ),
+                                  );
+                                }
+                                final day = DateTime(
+                                  _displayMonth.year,
+                                  _displayMonth.month,
+                                  index - startWeekday + 1,
+                                );
+                                return _buildDayCell(day);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ).animate().fadeIn(duration: 400.ms, delay: 80.ms),
+                    Container(width: 1, color: hairline),
+                    Expanded(
+                      child: _buildDayDetails(
+                        _selectedDay,
+                      ).animate().fadeIn(duration: 400.ms, delay: 140.ms),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 4),
-              const Icon(Icons.arrow_drop_down, color: Colors.white),
             ],
           ),
-        ),
-        backgroundColor: petroleoColor,
-        elevation: 1,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left, color: Colors.white),
-            onPressed: () => setState(() {
-              _displayMonth = DateTime(_displayMonth.year, _displayMonth.month - 1);
-            }),
-          ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right, color: Colors.white),
-            onPressed: () => setState(() {
-              _displayMonth = DateTime(_displayMonth.year, _displayMonth.month + 1);
-            }),
+          Positioned(
+            right: 36,
+            bottom: 32,
+            child: _Fab(onPressed: () => _showEventDialog(_selectedDay, null)),
           ),
         ],
-      ),
-      body: Row(
-        children: [
-          SizedBox(
-            width: 420,
-            child: Column(
-              children: [
-                _buildWeekHeader(weekBg, isDark),
-                Expanded(
-                  child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      childAspectRatio: 1.0,
-                      crossAxisSpacing: 1,
-                      mainAxisSpacing: 1,
-                    ),
-                    itemCount: daysInMonth + startWeekday,
-                    itemBuilder: (context, index) {
-                      if (index < startWeekday) return const SizedBox.shrink();
-                      final day = DateTime(_displayMonth.year,
-                          _displayMonth.month, index - startWeekday + 1);
-                      return _buildDayCell(day, cellBg, textColor);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          VerticalDivider(width: 1, thickness: 1, color: isDark ? Colors.white24 : const Color(0xFFE0E0E0)),
-          Expanded(child: _buildDayDetails(_selectedDay, isDark)),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: petroleoColor,
-        elevation: 4,
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
-        onPressed: () => _showEventDialog(_selectedDay, null),
       ),
     );
   }
 
-  Widget _buildWeekHeader(Color bg, bool isDark) {
+  Widget _buildWeekHeader() {
     final dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     return Container(
-      color: bg,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: hairline)),
+      ),
       child: Row(
         children: dias
-            .map((d) => Expanded(
-                  child: Center(
-                    child: Text(
-                      d,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11,
-                        color: d == 'Dom' || d == 'Sáb'
-                            ? Colors.red[300]
-                            : isDark ? Colors.white70 : Colors.black87,
-                      ),
+            .map(
+              (d) => Expanded(
+                child: Center(
+                  child: Text(
+                    d,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 10.5,
+                      letterSpacing: 0.4,
+                      color: (d == 'Dom' || d == 'Sáb')
+                          ? const Color(0xFFE39A85)
+                          : panelSlate,
                     ),
                   ),
-                ))
+                ),
+              ),
+            )
             .toList(),
       ),
     );
   }
 
-  Widget _buildDayCell(DateTime day, Color bg, Color textColor) {
+  Widget _buildDayCell(DateTime day) {
     final now = DateTime.now();
-    final bool isToday = day.year == now.year && day.month == now.month && day.day == now.day;
+    final bool isToday =
+        day.year == now.year && day.month == now.month && day.day == now.day;
     final bool isSelected = day == _selectedDay;
-    final bool isWeekend = day.weekday == DateTime.sunday || day.weekday == DateTime.saturday;
+    final bool isWeekend =
+        day.weekday == DateTime.sunday || day.weekday == DateTime.saturday;
 
     return GestureDetector(
       onTap: () => setState(() => _selectedDay = day),
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? petroleoColor.withValues(alpha: 0.12)
-              : isToday
-                  ? Colors.amber.withValues(alpha: 0.08)
-                  : bg,
+              ? dellalioGold.withValues(alpha: 0.07)
+              : Colors.transparent,
           border: Border(
-            bottom: BorderSide(
-                color: isSelected ? petroleoColor.withValues(alpha: 0.3) : Colors.grey.shade200,
-                width: isSelected ? 2 : 0.5),
-            right: BorderSide(color: Colors.grey.shade200, width: 0.5),
+            bottom: BorderSide(color: hairline),
+            right: BorderSide(color: hairline),
           ),
         ),
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('agenda')
-              .where('date', isGreaterThanOrEqualTo:
-                  Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
-              .where('date', isLessThan:
-                  Timestamp.fromDate(DateTime(day.year, day.month, day.day + 1)))
+              .where(
+                'date',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(
+                  DateTime(day.year, day.month, day.day),
+                ),
+              )
+              .where(
+                'date',
+                isLessThan: Timestamp.fromDate(
+                  DateTime(day.year, day.month, day.day + 1),
+                ),
+              )
               .snapshots(),
           builder: (context, snapshot) {
             final docs = snapshot.data?.docs ?? [];
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 3, left: 4),
-                  child: Container(
-                    width: isToday ? 20 : null,
-                    height: isToday ? 20 : null,
-                    alignment: Alignment.center,
-                    decoration: isToday
-                        ? BoxDecoration(color: petroleoColor, borderRadius: BorderRadius.circular(10))
-                        : null,
-                    child: Text(
-                      "${day.day}",
-                      style: TextStyle(
-                        fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                        fontSize: 12,
-                        color: isToday ? Colors.white : isWeekend ? Colors.red[300] : textColor,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(2, 1, 2, 0),
+            return Padding(
+              padding: const EdgeInsets.all(6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  isToday
+                      ? Container(
+                          width: 19,
+                          height: 19,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            color: dellalioGold,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            "${day.day}",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11.5,
+                              color: inkPageBg,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          "${day.day}",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 11.5,
+                            color: isWeekend
+                                ? const Color(0xFFE39A85)
+                                : panelIvory,
+                          ),
+                        ),
+                  Expanded(
                     child: SingleChildScrollView(
                       child: Column(
                         children: docs.map((doc) {
                           final data = doc.data() as Map<String, dynamic>;
-                          final color = Color(
-                            int.tryParse(data['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935,
+                          final color = _colorFromHex(
+                            data['userColor']?.toString(),
                           );
-                          final int imp = data['importancia'] ?? 0;
-                          final String name = (data['userName'] ?? '?').toString().toUpperCase();
+                          final String name = (data['userName'] ?? '?')
+                              .toString()
+                              .toUpperCase();
                           return Container(
-                            margin: const EdgeInsets.only(bottom: 1),
-                            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 0.5),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.45),
-                              borderRadius: BorderRadius.circular(2),
-                              border: imp >= 3 ? const Border(left: BorderSide(color: Colors.red, width: 2))
-                                  : imp >= 2 ? const Border(left: BorderSide(color: Colors.orange, width: 2)) : null,
+                            margin: const EdgeInsets.only(top: 3),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 3,
+                              vertical: 1,
                             ),
-                            child: Text(name,
-                                style: TextStyle(fontSize: 7.5, fontWeight: FontWeight.bold,
-                                    color: imp >= 3 ? const Color(0xFFB71C1C) : textColor),
-                                overflow: TextOverflow.ellipsis, maxLines: 1),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 7,
+                                fontWeight: FontWeight.w700,
+                                color: color,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           );
                         }).toList(),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             );
           },
         ),
@@ -263,164 +335,169 @@ class _AgendaScreenState extends State<AgendaScreen> {
     );
   }
 
-  Widget _buildDayDetails(DateTime day, bool isDark) {
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final sectionBg = isDark ? const Color(0xFF1A1A1A) : Colors.white;
-    final grey100 = isDark ? const Color(0xFF2A2A2A) : Colors.grey[100];
-    final grey50 = isDark ? const Color(0xFF1E1E1E) : Colors.grey[50];
-
+  Widget _buildDayDetails(DateTime day) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('agenda')
-          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(DateTime(day.year, day.month, day.day)))
-          .where('date', isLessThan: Timestamp.fromDate(DateTime(day.year, day.month, day.day + 1)))
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(
+              DateTime(day.year, day.month, day.day),
+            ),
+          )
+          .where(
+            'date',
+            isLessThan: Timestamp.fromDate(
+              DateTime(day.year, day.month, day.day + 1),
+            ),
+          )
           .snapshots(),
       builder: (context, snapshot) {
         final docs = snapshot.data?.docs ?? [];
-        if (docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.event_busy, size: 56, color: Colors.grey[350]),
-                const SizedBox(height: 10),
-                Text('NENHUM COMPROMISSO',
-                    style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                Text(DateFormat("dd 'de' MMMM", 'pt_BR').format(day),
-                    style: TextStyle(color: Colors.black54, fontSize: 13)),
-              ],
-            ),
-          );
-        }
-
-        final sorted = List.from(docs)..sort((a, b) {
-          final da = a.data() as Map<String, dynamic>;
-          final db = b.data() as Map<String, dynamic>;
-          final ta = da['time'] ?? '';
-          final tb = db['time'] ?? '';
-          if (ta.isNotEmpty && tb.isNotEmpty) return ta.compareTo(tb);
-          final int ia = da['importancia'] ?? 0;
-          final int ib = db['importancia'] ?? 0;
-          return ib.compareTo(ia);
-        });
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: sectionBg,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: hairline)),
+              ),
               child: Row(
                 children: [
                   Container(
-                    width: 36, height: 36,
-                    decoration: BoxDecoration(color: petroleoColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-                    child: Center(child: Text("${day.day}",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: petroleoColor))),
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: dellalioGold.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        "${day.day}",
+                        style: TextStyle(
+                          fontFamily: 'Fraunces',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                          color: dellalioGoldSoft,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
-                  Text(DateFormat("EEEE, MMMM", 'pt_BR').format(day),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: petroleoColor)),
+                  Text(
+                    DateFormat("EEEE, MMMM", 'pt_BR').format(day),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: panelIvory,
+                    ),
+                  ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: grey100, borderRadius: BorderRadius.circular(12)),
-                    child: Text('${sorted.length} COMPROMISSO${sorted.length != 1 ? 'S' : ''}',
-                        style: TextStyle(fontSize: 12, color: Colors.black87)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: hairline),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${docs.length} compromisso${docs.length != 1 ? 's' : ''}',
+                      style: TextStyle(fontSize: 11, color: panelSlate),
+                    ),
                   ),
                 ],
               ),
             ),
-            Divider(height: 1, color: isDark ? Colors.white24 : const Color(0xFFE0E0E0)),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                itemCount: sorted.length,
-                itemBuilder: (context, index) {
-                  final data = sorted[index].data() as Map<String, dynamic>;
-                  final doc = sorted[index] as QueryDocumentSnapshot;
-                  final int imp = data['importancia'] ?? 0;
-                  final String time = data['time'] ?? '';
-                  final String text = data['text'] ?? '';
-                  final String info = data['info'] ?? '';
-                  final String userName = data['userName'] ?? '?';
-                  final Color userColor = Color(
-                    int.tryParse(data['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935,
-                  );
-                  final Color impColor = imp >= 3 ? Colors.red : imp >= 2 ? Colors.orange : petroleoColor;
-
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    elevation: 1,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => _showEventDialog(day, doc),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border(left: BorderSide(color: impColor, width: 4)),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(children: [
-                                if (time.isNotEmpty) ...[
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(color: impColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                                    child: Text(time, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: impColor)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                _badge(impColor, imp >= 3 ? 'ALTA' : imp >= 2 ? 'MÉDIA' : 'NORMAL', imp),
-                                const Spacer(),
-                                CircleAvatar(
-                                  radius: 13, backgroundColor: userColor,
-                                  child: Text(userName.isNotEmpty ? userName[0].toUpperCase() : '?',
-                                      style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
-                                ),
-                              ]),
-                              const SizedBox(height: 8),
-                              Text(text.isNotEmpty ? text : 'SEM TÍTULO',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor)),
-                              if (info.isNotEmpty) ...[
-                                const SizedBox(height: 4),
-                                Container(
-                                  width: double.infinity, padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(color: grey50, borderRadius: BorderRadius.circular(8)),
-                                  child: Text(info, style: TextStyle(fontSize: 13, color: isDark ? Colors.white70 : Colors.black87, height: 1.4),
-                                      maxLines: 4, overflow: TextOverflow.ellipsis),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
+            if (docs.isEmpty)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.event_busy_outlined,
+                        size: 48,
+                        color: panelSlateDim,
                       ),
-                    ),
-                  );
-                },
+                      const SizedBox(height: 10),
+                      Text(
+                        'Nenhum compromisso',
+                        style: TextStyle(color: panelSlate, fontSize: 14),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        DateFormat("dd 'de' MMMM", 'pt_BR').format(day),
+                        style: TextStyle(color: panelSlateDim, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: Builder(
+                  builder: (context) {
+                    final sorted = List.from(docs)
+                      ..sort((a, b) {
+                        final da = a.data() as Map<String, dynamic>;
+                        final db = b.data() as Map<String, dynamic>;
+                        final ta = da['time'] ?? '';
+                        final tb = db['time'] ?? '';
+                        if (ta.isNotEmpty && tb.isNotEmpty)
+                          return ta.compareTo(tb);
+                        final int ia = da['importancia'] ?? 0;
+                        final int ib = db['importancia'] ?? 0;
+                        return ib.compareTo(ia);
+                      });
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                      itemCount: sorted.length,
+                      itemBuilder: (context, index) {
+                        final data =
+                            sorted[index].data() as Map<String, dynamic>;
+                        final doc = sorted[index] as QueryDocumentSnapshot;
+                        final int imp = data['importancia'] ?? 0;
+                        final String time = data['time'] ?? '';
+                        final String text = data['text'] ?? '';
+                        final String info = data['info'] ?? '';
+                        final String userName = data['userName'] ?? '?';
+                        final Color userColor = _colorFromHex(
+                          data['userColor']?.toString(),
+                        );
+                        final Color impColor = imp >= 3
+                            ? panelRust
+                            : imp >= 2
+                            ? dellalioGold
+                            : navyAccent;
+
+                        return _EventCard(
+                          time: time,
+                          title: text.isNotEmpty ? text : 'Sem título',
+                          info: info,
+                          impColor: impColor,
+                          impLabel: imp >= 3
+                              ? 'ALTA'
+                              : imp >= 2
+                              ? 'MÉDIA'
+                              : 'NORMAL',
+                          userName: userName,
+                          userColor: userColor,
+                          delayIndex: index % 12,
+                          onTap: () => _showEventDialog(day, doc),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         );
       },
-    );
-  }
-
-  Widget _badge(Color color, String label, int imp) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.flag, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color)),
-      ]),
     );
   }
 
@@ -438,115 +515,273 @@ class _AgendaScreenState extends State<AgendaScreen> {
       context: context,
       builder: (_) => StatefulBuilder(
         builder: (ctx, setDlg) => Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: inkSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: Container(
             constraints: const BoxConstraints(maxWidth: 460),
             padding: const EdgeInsets.all(24),
             child: SingleChildScrollView(
-              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Row(children: [
-                  Container(
-                    width: 40, height: 40,
-                    decoration: BoxDecoration(color: petroleoColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                    child: Center(child: Text("${day.day}",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: petroleoColor))),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: dellalioGold.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "${day.day}",
+                            style: TextStyle(
+                              fontFamily: 'Fraunces',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
+                              color: dellalioGoldSoft,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat(
+                                "EEEE, dd 'de' MMMM",
+                                'pt_BR',
+                              ).format(day),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14.5,
+                                color: panelIvory,
+                              ),
+                            ),
+                            Text(
+                              DateFormat("yyyy", 'pt_BR').format(day),
+                              style: TextStyle(fontSize: 12, color: panelSlate),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(DateFormat("EEEE, dd 'de' MMMM", 'pt_BR').format(day),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: petroleoColor)),
-                    Text(DateFormat("yyyy", 'pt_BR').format(day), style: TextStyle(fontSize: 12, color: Colors.grey[500])),
-                  ])),
-                ]),
-                const Divider(height: 24),
-                if (isOwner) ...[
-                  _dialogLabel('HORÁRIO'), const SizedBox(height: 6),
-                  _dialogField(controller: timeCtrl, hint: 'Toque para selecionar o horário', icon: Icons.access_time, readOnly: true,
-                      onTap: () async {
-                    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
-                    if (picked != null) timeCtrl.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-                  }),
-                  const SizedBox(height: 16),
-                ] else if (timeCtrl.text.isNotEmpty) ...[
-                  Row(children: [const Icon(Icons.access_time, size: 16), const SizedBox(width: 4), Text(timeCtrl.text, style: const TextStyle(fontSize: 14))]),
-                  const SizedBox(height: 16),
-                ],
-                _dialogLabel('NÍVEL DE IMPORTÂNCIA'), const SizedBox(height: 8),
-                Row(children: [
-                  _importanceChip('NORMAL', 0, imp, isOwner, (v) => setDlg(() => imp = v), petroleoColor),
-                  const SizedBox(width: 8),
-                  _importanceChip('MÉDIA', 2, imp, isOwner, (v) => setDlg(() => imp = v), Colors.orange),
-                  const SizedBox(width: 8),
-                  _importanceChip('ALTA', 3, imp, isOwner, (v) => setDlg(() => imp = v), Colors.red),
-                ]),
-                const SizedBox(height: 18),
-                _dialogLabel('O QUE SERÁ FEITO'), const SizedBox(height: 6),
-                _dialogField(controller: descCtrl, hint: 'Título ou tarefa principal...', enabled: isOwner, maxLines: 2),
-                const SizedBox(height: 16),
-                _dialogLabel('INFORMAÇÕES ADICIONAIS'), const SizedBox(height: 6),
-                _dialogField(controller: infoCtrl, hint: 'Medidas, observações ou notas...', enabled: isOwner, maxLines: 3),
-                const SizedBox(height: 24),
-                Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                  if (isEditing && isOwner)
-                    TextButton(onPressed: () { doc.reference.delete(); Navigator.pop(context); },
-                        child: const Text('EXCLUIR', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+                  const SizedBox(height: 18),
+                  Container(height: 1, color: hairline),
+                  const SizedBox(height: 18),
                   if (isOwner) ...[
-                    const Spacer(),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: petroleoColor, foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-                      icon: Icon(isEditing ? Icons.save : Icons.add, size: 20),
-                      label: Text(isEditing ? 'SALVAR' : 'ADICIONAR',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      onPressed: () async {
-                        if (descCtrl.text.trim().isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                              content: Text('O campo "O que será feito" é obrigatório'), backgroundColor: Colors.red));
-                          return;
+                    _dialogLabel('Horário'),
+                    const SizedBox(height: 6),
+                    _dialogField(
+                      controller: timeCtrl,
+                      hint: 'Toque para selecionar o horário',
+                      icon: Icons.access_time,
+                      readOnly: true,
+                      onTap: () async {
+                        final picked = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (picked != null) {
+                          timeCtrl.text =
+                              '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
                         }
-                        final userRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
-                        final userDoc = await userRef.get();
-                        final userData = userDoc.data();
-                        String userColor;
-                        if (userData != null && userData['userColor'] != null && userData['userColor'].toString().isNotEmpty) {
-                          userColor = userData['userColor'].toString();
-                        } else {
-                          final color = getUserColor(user.uid);
-                          userColor = colorToHex(color);
-                          await userRef.set({'userColor': userColor}, SetOptions(merge: true));
-                        }
-                        final nota = {
-                          'userId': user.uid, 'userName': userData?['nome'] ?? 'Usuário', 'userColor': userColor,
-                          'text': descCtrl.text.trim(), 'info': infoCtrl.text.trim(), 'time': timeCtrl.text.trim(),
-                          'importancia': imp, 'date': Timestamp.fromDate(day),
-                        };
-                        if (!isEditing) {
-                          await FirebaseFirestore.instance.collection('agenda').add(nota);
-                        } else {
-                          await doc.reference.update(nota);
-                        }
-                        if (!mounted) return;
-                        Navigator.pop(context);
                       },
                     ),
+                    const SizedBox(height: 16),
+                  ] else if (timeCtrl.text.isNotEmpty) ...[
+                    Row(
+                      children: [
+                        Icon(Icons.access_time, size: 16, color: panelSlate),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeCtrl.text,
+                          style: TextStyle(fontSize: 14, color: panelIvory),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                   ],
-                ]),
-                if (isEditing) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(8)),
-                    child: Row(children: [
-                      CircleAvatar(radius: 12, backgroundColor: Color(
-                        int.tryParse(data?['userColor']?.toString().replaceFirst('#', '0xff') ?? '0xffE53935') ?? 0xffE53935)),
+                  _dialogLabel('Nível de importância'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _importanceChip(
+                        'Normal',
+                        0,
+                        imp,
+                        isOwner,
+                        (v) => setDlg(() => imp = v),
+                        navyAccent,
+                      ),
                       const SizedBox(width: 8),
-                      Text('CRIADO POR ${data?['userName'] ?? 'DESCONHECIDO'}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                    ]),
+                      _importanceChip(
+                        'Média',
+                        2,
+                        imp,
+                        isOwner,
+                        (v) => setDlg(() => imp = v),
+                        dellalioGold,
+                      ),
+                      const SizedBox(width: 8),
+                      _importanceChip(
+                        'Alta',
+                        3,
+                        imp,
+                        isOwner,
+                        (v) => setDlg(() => imp = v),
+                        panelRust,
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 18),
+                  _dialogLabel('O que será feito'),
+                  const SizedBox(height: 6),
+                  _dialogField(
+                    controller: descCtrl,
+                    hint: 'Título ou tarefa principal...',
+                    enabled: isOwner,
+                    maxLines: 2,
+                  ),
+                  const SizedBox(height: 16),
+                  _dialogLabel('Informações adicionais'),
+                  const SizedBox(height: 6),
+                  _dialogField(
+                    controller: infoCtrl,
+                    hint: 'Medidas, observações ou notas...',
+                    enabled: isOwner,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      if (isEditing && isOwner)
+                        TextButton(
+                          onPressed: () {
+                            doc.reference.delete();
+                            Navigator.pop(context);
+                          },
+                          child: const Text(
+                            'Excluir',
+                            style: TextStyle(
+                              color: panelRust,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      if (isOwner) ...[
+                        const Spacer(),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: dellalioGold,
+                            foregroundColor: inkPageBg,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          icon: Icon(
+                            isEditing ? Icons.save_outlined : Icons.add,
+                            size: 20,
+                          ),
+                          label: Text(
+                            isEditing ? 'Salvar' : 'Adicionar',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                          ),
+                          onPressed: () async {
+                            if (descCtrl.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text(
+                                    'O campo "O que será feito" é obrigatório',
+                                  ),
+                                  backgroundColor: panelRust,
+                                ),
+                              );
+                              return;
+                            }
+                            final userRef = FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid);
+                            final userDoc = await userRef.get();
+                            final userData = userDoc.data();
+                            String userColor;
+                            if (userData != null &&
+                                userData['userColor'] != null &&
+                                userData['userColor'].toString().isNotEmpty) {
+                              userColor = userData['userColor'].toString();
+                            } else {
+                              final color = getUserColor(user.uid);
+                              userColor = colorToHex(color);
+                              await userRef.set({
+                                'userColor': userColor,
+                              }, SetOptions(merge: true));
+                            }
+                            final nota = {
+                              'userId': user.uid,
+                              'userName': userData?['nome'] ?? 'Usuário',
+                              'userColor': userColor,
+                              'text': descCtrl.text.trim(),
+                              'info': infoCtrl.text.trim(),
+                              'time': timeCtrl.text.trim(),
+                              'importancia': imp,
+                              'date': Timestamp.fromDate(day),
+                            };
+                            if (!isEditing) {
+                              await FirebaseFirestore.instance
+                                  .collection('agenda')
+                                  .add(nota);
+                            } else {
+                              await doc.reference.update(nota);
+                            }
+                            if (!mounted) return;
+                            Navigator.pop(context);
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (isEditing) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: inkSurfaceHover,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: _colorFromHex(
+                              data?['userColor']?.toString(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Criado por ${data?['userName'] ?? 'desconhecido'}',
+                            style: TextStyle(fontSize: 12, color: panelSlate),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
-              ]),
+              ),
             ),
           ),
         ),
@@ -555,50 +790,304 @@ class _AgendaScreenState extends State<AgendaScreen> {
   }
 
   Widget _dialogLabel(String text) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1C1B1F), letterSpacing: 0.8));
-  }
-
-  Widget _dialogField({required TextEditingController controller, String hint = '', IconData? icon, bool enabled = true, int maxLines = 1, bool readOnly = false, VoidCallback? onTap}) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return TextField(
-      style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-      controller: controller, enabled: enabled, readOnly: readOnly, maxLines: maxLines, onTap: onTap,
-      decoration: InputDecoration(
-        hintText: hint, hintStyle: const TextStyle(color: Colors.black38, fontSize: 14),
-        filled: true, fillColor: enabled ? Colors.grey[100] : Colors.grey[200],
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-        prefixIcon: icon != null ? Icon(icon, size: 20, color: Colors.black54) : null,
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: panelSlate,
+        letterSpacing: 0.6,
       ),
     );
   }
 
-  Widget _importanceChip(String label, int val, int cur, bool enabled, Function(int) onSel, Color color) {
+  Widget _dialogField({
+    required TextEditingController controller,
+    String hint = '',
+    IconData? icon,
+    bool enabled = true,
+    int maxLines = 1,
+    bool readOnly = false,
+    VoidCallback? onTap,
+  }) {
+    return TextField(
+      style: TextStyle(color: panelIvory),
+      controller: controller,
+      enabled: enabled,
+      readOnly: readOnly,
+      maxLines: maxLines,
+      onTap: onTap,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: TextStyle(color: panelSlateDim, fontSize: 14),
+        filled: true,
+        fillColor: enabled ? inkSurfaceHover : inkPageBg,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        prefixIcon: icon != null
+            ? Icon(icon, size: 20, color: panelSlate)
+            : null,
+      ),
+    );
+  }
+
+  Widget _importanceChip(
+    String label,
+    int val,
+    int cur,
+    bool enabled,
+    Function(int) onSel,
+    Color color,
+  ) {
     final sel = cur == val;
     return Expanded(
       child: GestureDetector(
         onTap: enabled ? () => onSel(val) : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: sel ? color.withValues(alpha: 0.15) : Colors.grey[100],
+            color: sel ? color.withValues(alpha: 0.12) : inkSurfaceHover,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: sel ? color : Colors.transparent, width: 2),
+            border: Border.all(
+              color: sel ? color : Colors.transparent,
+              width: 1.5,
+            ),
           ),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.flag, size: 20, color: sel ? color : Colors.black38),
-            const SizedBox(height: 4),
-            Text(label, style: TextStyle(fontSize: 12, fontWeight: sel ? FontWeight.bold : FontWeight.w500, color: sel ? color : Colors.black87)),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.flag_outlined,
+                size: 18,
+                color: sel ? color : panelSlateDim,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+                  color: sel ? color : panelSlate,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Future<void> _showMonthPicker(BuildContext context) async {
-    final picked = await showDatePicker(context: context, initialDate: _displayMonth, firstDate: DateTime(2020), lastDate: DateTime(2035), locale: const Locale('pt', 'BR'));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _displayMonth,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      locale: const Locale('pt', 'BR'),
+    );
     if (picked != null) setState(() => _displayMonth = picked);
+  }
+}
+
+class _ArrowButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _ArrowButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: hairline),
+        ),
+        child: Icon(icon, size: 17, color: panelSlate),
+      ),
+    );
+  }
+}
+
+class _Fab extends StatelessWidget {
+  final VoidCallback onPressed;
+  const _Fab({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 52,
+        height: 52,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: dellalioGold,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Icon(Icons.add, color: inkPageBg, size: 24),
+      ),
+    );
+  }
+}
+
+class _EventCard extends StatelessWidget {
+  final String time;
+  final String title;
+  final String info;
+  final Color impColor;
+  final String impLabel;
+  final String userName;
+  final Color userColor;
+  final int delayIndex;
+  final VoidCallback onTap;
+
+  const _EventCard({
+    required this.time,
+    required this.title,
+    required this.info,
+    required this.impColor,
+    required this.impLabel,
+    required this.userName,
+    required this.userColor,
+    required this.delayIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: GestureDetector(
+        onTap: onTap,
+        child:
+            Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: inkSurface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border(left: BorderSide(color: impColor, width: 3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          if (time.isNotEmpty) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: impColor.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                time,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12.5,
+                                  color: impColor,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: impColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.flag, size: 11, color: impColor),
+                                const SizedBox(width: 4),
+                                Text(
+                                  impLabel,
+                                  style: TextStyle(
+                                    fontSize: 10.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: impColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Spacer(),
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: userColor,
+                            child: Text(
+                              userName.isNotEmpty
+                                  ? userName[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: panelIvory,
+                        ),
+                      ),
+                      if (info.isNotEmpty) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(9),
+                          decoration: BoxDecoration(
+                            color: inkSurfaceHover,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            info,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: panelSlate,
+                              height: 1.4,
+                            ),
+                            maxLines: 4,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                )
+                .animate(delay: (50 * delayIndex).ms)
+                .fadeIn(duration: 380.ms, curve: Curves.easeOut)
+                .slideY(begin: 0.06, end: 0, curve: Curves.easeOut),
+      ),
+    );
   }
 }

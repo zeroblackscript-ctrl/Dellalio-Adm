@@ -1,9 +1,12 @@
 import 'dart:io';
-import 'package:flutter/material.dart';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+
 import '../../core/people_service.dart';
 import '../../core/theme.dart';
 
@@ -18,8 +21,6 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _msgCtrl = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-
-  // Cache local para não buscar repetidamente a foto do mesmo remetente
   final Map<String, Person?> _personCache = {};
 
   Future<Person?> _getSenderPerson(String senderId) async {
@@ -33,41 +34,37 @@ class _ChatScreenState extends State<ChatScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // 1. Busca o nome/foto real do usuário (users ou funcionarios)
     final person = await PeopleService.fetchPerson(user.uid);
     String userName = person?.fullName.isNotEmpty == true
         ? person!.fullName
         : "Usuário";
     String userPhoto = person?.fotoUrl ?? '';
 
-    // 2. Prepara o lote de escrita (Batch) para salvar nos locais necessários
     WriteBatch batch = FirebaseFirestore.instance.batch();
 
-    // Local A: Mensagem no Chat
     DocumentReference chatMsgRef = FirebaseFirestore.instance
         .collection('chats')
         .doc(widget.chatId)
         .collection('messages')
-        .doc(); // Gera um ID automático
+        .doc();
 
     batch.set(chatMsgRef, {
       'text': text,
       'imageUrl': imageUrl,
       'senderId': user.uid,
-      'senderName': userName, // Salva o nome vindo do Firestore
+      'senderName': userName,
       'senderPhoto': userPhoto,
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Local B: Atualiza a prévia da última mensagem no chat (para a lista)
-    DocumentReference chatRef =
-        FirebaseFirestore.instance.collection('chats').doc(widget.chatId);
+    DocumentReference chatRef = FirebaseFirestore.instance
+        .collection('chats')
+        .doc(widget.chatId);
     batch.set(chatRef, {
       'lastMessage': text ?? (imageUrl != null ? '📷 Imagem' : ''),
       'lastMessageAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // Local C: Histórico no perfil do usuário (se existir a coleção correta)
     final logCollection = person?.origem == 'funcionarios'
         ? 'funcionarios'
         : 'users';
@@ -75,7 +72,7 @@ class _ChatScreenState extends State<ChatScreen> {
         .collection(logCollection)
         .doc(user.uid)
         .collection('mensagens_enviadas')
-        .doc(); // Cria um registro no histórico do usuário
+        .doc();
 
     batch.set(userLogRef, {
       'chatId': widget.chatId,
@@ -83,7 +80,6 @@ class _ChatScreenState extends State<ChatScreen> {
       'createdAt': FieldValue.serverTimestamp(),
     });
 
-    // Executa tudo
     await batch.commit();
 
     if (!mounted) return;
@@ -103,24 +99,10 @@ class _ChatScreenState extends State<ChatScreen> {
     _sendMessage(imageUrl: url);
   }
 
-  Widget _avatar(String photoUrl, {double radius = 16}) {
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: Colors.black12,
-      backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-      child: photoUrl.isEmpty
-          ? Icon(Icons.person, size: radius, color: Colors.black45)
-          : null,
-    );
-  }
-
   void _markAsRead() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-    FirebaseFirestore.instance
-        .collection('chats')
-        .doc(widget.chatId)
-        .set({
+    FirebaseFirestore.instance.collection('chats').doc(widget.chatId).set({
       'lastRead.${user.uid}': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
@@ -128,23 +110,45 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-
-    // Marca o chat como lido ao abrir a tela
     WidgetsBinding.instance.addPostFrameCallback((_) => _markAsRead());
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
-    final meBubble = isDark ? petroleoDarkColor : Colors.amber.shade200;
-    final otherBubble = isDark ? const Color(0xFF37474F) : Colors.blueGrey.shade100;
-    final bubbleText = isDark ? Colors.white : Colors.black87;
-    final bubbleBorder = isDark ? Colors.white24 : Colors.black;
-    final inputFill = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(title: Text(widget.chatName.toUpperCase()), backgroundColor: petroleoColor),
+      backgroundColor: inkPageBg,
       body: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: hairline)),
+            ),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(Icons.arrow_back, size: 20, color: panelSlate),
+                ),
+                const SizedBox(width: 14),
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: inkSurfaceHover,
+                  child: Icon(
+                    Icons.person_outline,
+                    size: 16,
+                    color: panelSlate,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Text(
+                  widget.chatName,
+                  style: TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w600,
+                    color: panelIvory,
+                  ),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -155,145 +159,105 @@ class _ChatScreenState extends State<ChatScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+                    child: CircularProgressIndicator(color: dellalioGold),
+                  );
                 }
                 return ListView.builder(
                   reverse: true,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
                     var msg = snapshot.data!.docs[index];
                     var data = msg.data() as Map<String, dynamic>;
                     bool isMe = data['senderId'] == user?.uid;
-                    String storedPhoto = (data['senderPhoto'] ?? '')
-                        .toString();
+                    String storedPhoto = (data['senderPhoto'] ?? '').toString();
 
                     Widget buildBubble(String photoUrl) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: isMe
-                              ? MainAxisAlignment.end
-                              : MainAxisAlignment.start,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            if (!isMe) ...[
-                              _avatar(photoUrl),
-                              const SizedBox(width: 6),
-                            ],
-                            Flexible(
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 2,
-                                ),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: isMe ? meBubble : otherBubble,
-                                  border: Border.all(
-                                    color: bubbleBorder,
-                                    width: 2,
-                                  ),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(20),
-                                    topRight: const Radius.circular(20),
-                                    bottomLeft: isMe
-                                        ? const Radius.circular(20)
-                                        : Radius.zero,
-                                    bottomRight: isMe
-                                        ? Radius.zero
-                                        : const Radius.circular(20),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    if (!isMe)
-                                      Text(
-                                        data['senderName'] ?? '',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                          color: bubbleText,
-                                        ),
-                                      ),
-                                    if (data['text'] != null)
-                                      Text(data['text'], style: TextStyle(color: bubbleText)),
-                                    if (data['imageUrl'] != null)
-                                      ClipRRect(
-                                        borderRadius: BorderRadius.circular(
-                                          8,
-                                        ),
-                                        child: Image.network(
-                                          data['imageUrl'],
-                                          width: 150,
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            if (isMe) ...[
-                              const SizedBox(width: 6),
-                              _avatar(photoUrl),
-                            ],
-                          ],
-                        ),
+                      return _MessageBubble(
+                        isMe: isMe,
+                        photoUrl: photoUrl,
+                        senderName: data['senderName'] ?? '',
+                        text: data['text'],
+                        imageUrl: data['imageUrl'],
                       );
                     }
 
-                    // Se a mensagem já tem a foto salva, usa direto.
-                    if (storedPhoto.isNotEmpty) {
-                      return buildBubble(storedPhoto);
-                    }
+                    if (storedPhoto.isNotEmpty) return buildBubble(storedPhoto);
 
-                    // Caso contrário (mensagens antigas), busca no serviço
-                    // unificado de pessoas para exibir a foto correta.
                     final senderId = (data['senderId'] ?? '').toString();
                     return FutureBuilder<Person?>(
                       future: senderId.isEmpty
                           ? null
                           : _getSenderPerson(senderId),
-                      builder: (context, snap) {
-                        return buildBubble(snap.data?.fotoUrl ?? '');
-                      },
+                      builder: (context, snap) =>
+                          buildBubble(snap.data?.fotoUrl ?? ''),
                     );
                   },
                 );
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: hairline)),
+            ),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(Icons.image),
-                  onPressed: _pickAndUpload,
+                GestureDetector(
+                  onTap: _pickAndUpload,
+                  child: Icon(
+                    Icons.image_outlined,
+                    size: 21,
+                    color: panelSlate,
+                  ),
                 ),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: TextField(
-                    controller: _msgCtrl,
-                    onSubmitted: (value) {
-                      if (value.trim().isNotEmpty) {
-                        _sendMessage(text: value);
-                      }
-                    },
-                    style: TextStyle(color: bubbleText),
-                    decoration: InputDecoration(
-                      hintText: "DIGITE...",
-                      hintStyle: TextStyle(color: isDark ? Colors.white38 : Colors.black38),
-                      filled: true,
-                      fillColor: inputFill,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: inkSurface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: hairline),
+                    ),
+                    child: TextField(
+                      controller: _msgCtrl,
+                      onSubmitted: (value) {
+                        if (value.trim().isNotEmpty) _sendMessage(text: value);
+                      },
+                      style: TextStyle(color: panelIvory, fontSize: 13.5),
+                      decoration: InputDecoration(
+                        hintText: "Escreva uma mensagem...",
+                        hintStyle: TextStyle(
+                          color: panelSlateDim,
+                          fontSize: 13.5,
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  onPressed: () => _sendMessage(text: _msgCtrl.text),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => _sendMessage(text: _msgCtrl.text),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: dellalioGold,
+                    ),
+                    child: Icon(Icons.send, size: 16, color: inkPageBg),
+                  ),
                 ),
               ],
             ),
@@ -301,5 +265,122 @@ class _ChatScreenState extends State<ChatScreen> {
         ],
       ),
     );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  final bool isMe;
+  final String photoUrl;
+  final String senderName;
+  final String? text;
+  final String? imageUrl;
+
+  const _MessageBubble({
+    required this.isMe,
+    required this.photoUrl,
+    required this.senderName,
+    this.text,
+    this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            mainAxisAlignment: isMe
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (!isMe) ...[
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: inkSurfaceHover,
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : null,
+                  child: photoUrl.isEmpty
+                      ? Icon(Icons.person, size: 14, color: panelSlate)
+                      : null,
+                ),
+                const SizedBox(width: 8),
+              ],
+              Flexible(
+                child: Container(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.5,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? dellalioGold.withValues(alpha: 0.14)
+                        : inkSurface,
+                    border: Border.all(
+                      color: isMe
+                          ? dellalioGold.withValues(alpha: 0.3)
+                          : hairline,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(14),
+                      topRight: const Radius.circular(14),
+                      bottomLeft: Radius.circular(isMe ? 14 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 14),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (!isMe && senderName.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 3),
+                          child: Text(
+                            senderName,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 10,
+                              color: dellalioGoldSoft,
+                            ),
+                          ),
+                        ),
+                      if (text != null)
+                        Text(
+                          text!,
+                          style: TextStyle(color: panelIvory, fontSize: 13),
+                        ),
+                      if (imageUrl != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(imageUrl!, width: 150),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              if (isMe) ...[
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: inkSurfaceHover,
+                  backgroundImage: photoUrl.isNotEmpty
+                      ? NetworkImage(photoUrl)
+                      : null,
+                  child: photoUrl.isEmpty
+                      ? Icon(Icons.person, size: 14, color: panelSlate)
+                      : null,
+                ),
+              ],
+            ],
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 260.ms)
+        .slideY(begin: 0.06, end: 0, curve: Curves.easeOut);
   }
 }

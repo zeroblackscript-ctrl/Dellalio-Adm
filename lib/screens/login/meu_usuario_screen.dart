@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -73,7 +75,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _isUploading = false);
     }
   }
-
   Future<void> _updateProfile() async {
     // Validação da troca de senha ANTES de qualquer alteração
     final bool wantsPasswordChange =
@@ -148,7 +149,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
         'fotoUrl': _photoUrl,
         'nome': _nomeController.text,
-        
         'sobrenome': _sobrenomeController.text,
         'telefone': _telefoneController.text,
         'endereco': _enderecoController.text,
@@ -162,8 +162,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
-
   @override
   void dispose() {
     _emailController.dispose();
@@ -179,48 +177,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("MEU PERFIL"), backgroundColor: const Color(0xFF62503F)),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator()) 
-        : ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Center(
-                child: GestureDetector(
-                  onTap: _isUploading ? null : _pickAndUploadImage,
-                  child: Stack(
-                    alignment: Alignment.center,
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Meu perfil"),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator(color: dellalioGold))
+                : ListView(
+                    padding: const EdgeInsets.all(20),
                     children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey[200],
-                        child: _photoUrl != null
-                          ? ClipRRect(borderRadius: BorderRadius.circular(60), child: CachedNetworkImage(imageUrl: _photoUrl!, fit: BoxFit.cover, width: 120, height: 120, cacheKey: _photoUrl))
-                          : const Icon(Icons.person, size: 60, color: Colors.grey),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _isUploading ? null : _pickAndUploadImage,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              CircleAvatar(
+                                radius: 60,
+                                backgroundColor: inkSurfaceHover,
+                                child: _photoUrl != null
+                                  ? ClipRRect(borderRadius: BorderRadius.circular(60), child: CachedNetworkImage(imageUrl: _photoUrl!, fit: BoxFit.cover, width: 120, height: 120, cacheKey: _photoUrl))
+                                  : Icon(Icons.person, size: 60, color: panelSlate),
+                              ),
+                              if (_isUploading) const CircularProgressIndicator(color: dellalioGold),
+                              if (!_isUploading) const Positioned(bottom: 0, right: 0, child: Icon(Icons.camera_alt, color: dellalioGold, size: 30)),
+                            ],
+                          ),
+                        ),
                       ),
-                      if (_isUploading) const CircularProgressIndicator(),
-                      if (!_isUploading) const Positioned(bottom: 0, right: 0, child: Icon(Icons.camera_alt, color: Colors.amber, size: 30)),
+                      const SizedBox(height: 20),
+                      DellalioFormField(controller: _nomeController, label: "Nome", icon: Icons.person_outline),
+                      const SizedBox(height: 14),
+                      DellalioFormField(controller: _sobrenomeController, label: "Sobrenome"),
+                      const SizedBox(height: 14),
+                      DellalioFormField(controller: _emailController, label: "E-mail", icon: Icons.email_outlined),
+                      const SizedBox(height: 14),
+                      DellalioFormField(controller: _telefoneController, label: "Celular", icon: Icons.phone_outlined),
+                      const SizedBox(height: 14),
+                      DellalioFormField(controller: _enderecoController, label: "Endereço", icon: Icons.home_outlined),
+                      const Divider(height: 40),
+                      DellalioFormField(controller: _oldPassController, label: "Senha atual (para alterar senha)", icon: Icons.lock_outline, obscure: true),
+                      const SizedBox(height: 14),
+                      DellalioFormField(controller: _passController, label: "Nova senha", icon: Icons.lock_reset_outlined, obscure: true),
+                      const SizedBox(height: 30),
+                      DellalioGoldButton(
+                        label: "Salvar alterações",
+                        icon: Icons.save_outlined,
+                        fullWidth: true,
+                        onPressed: _updateProfile,
+                      )
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(controller: _nomeController, decoration: const InputDecoration(labelText: "Nome")),
-              TextField(controller: _sobrenomeController, decoration: const InputDecoration(labelText: "Sobrenome")),
-              TextField(controller: _emailController, decoration: const InputDecoration(labelText: "E-mail")),
-              TextField(controller: _telefoneController, decoration: const InputDecoration(labelText: "Celular")),
-              TextField(controller: _enderecoController, decoration: const InputDecoration(labelText: "Endereço")),
-              const Divider(height: 40),
-              TextField(controller: _oldPassController, obscureText: true, decoration: const InputDecoration(labelText: "Senha Atual (para alterar senha)")),
-              TextField(controller: _passController, obscureText: true, decoration: const InputDecoration(labelText: "Nova Senha")),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: _updateProfile,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF62503F)),
-                child: const Text("SALVAR ALTERAÇÕES", style: TextStyle(color: Colors.white)),
-              )
-            ],
           ),
+        ],
+      ),
     );
   }
 }

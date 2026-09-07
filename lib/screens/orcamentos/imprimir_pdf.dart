@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 
 class VisualizarPdfScreen extends StatefulWidget {
   final String orcamentoId;
@@ -71,7 +72,6 @@ Map<String, dynamic>? _clienteCompleto;
   Future<Uint8List> _buildPdf() async {
     final pdf = pw.Document();
     final corPadrao = PdfColor.fromHex("#012738");
-    String nomeCliente = widget.dadosCliente['name']?.toString().toUpperCase() ?? "CLIENTE NÃO INFORMADO";
 
     pdf.addPage(
       pw.Page(
@@ -161,13 +161,13 @@ Map<String, dynamic>? _clienteCompleto;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Visualizar Orçamento"),
-        backgroundColor: const Color(0xFF012738),
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: LayoutBuilder(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Visualizar orçamento"),
+          Expanded(
+            child: Center(
+              child: LayoutBuilder(
           builder: (context, constraints) {
                 return  ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
@@ -190,6 +190,9 @@ Map<String, dynamic>? _clienteCompleto;
           );}
         ),
       ),
+    ),
+  ],
+),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           // Gera o PDF e abre o menu de impressão/compartilhamento do sistema
@@ -199,9 +202,10 @@ Map<String, dynamic>? _clienteCompleto;
             name: "Orcamento_${widget.dadosCliente['name'] ?? 'cliente'}",
           );
         },
-        backgroundColor: const Color(0xFF012738),
-        icon: const Icon(Icons.print, color: Colors.white),
-        label: const Text("Imprimir", style: TextStyle(color: Colors.white)),
+        backgroundColor: dellalioGold,
+        foregroundColor: inkPageBg,
+        icon: const Icon(Icons.print),
+        label: const Text("Imprimir", style: TextStyle(fontWeight: FontWeight.w600)),
       ),
     );
   }

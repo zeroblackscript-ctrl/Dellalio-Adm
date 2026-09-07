@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../../core/dellalio_kit.dart';
+import '../../../core/pdf_cover_card.dart';
 import '../../../core/theme.dart';
 
 class ProjectDetailScreen extends StatefulWidget {
@@ -49,18 +50,22 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('EXCLUIR PROJETO'),
-        content: const Text(
-            'Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.'),
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text('Excluir projeto', style: TextStyle(color: panelIvory)),
+        content: Text(
+          'Tem certeza que deseja excluir este projeto? Esta ação não pode ser desfeita.',
+          style: TextStyle(color: panelSlate),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('CANCELAR')),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancelar', style: TextStyle(color: panelSlate)),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: panelRust),
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text('EXCLUIR', style: TextStyle(color: Colors.white)),
+            child: const Text('Excluir', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -103,7 +108,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
         messenger.showSnackBar(
-          const SnackBar(content: Text('PROJETO EXCLUÍDO COM SUCESSO!')),
+          const SnackBar(content: Text('Projeto excluído com sucesso!')),
         );
       }
     } catch (e) {
@@ -111,7 +116,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         final messenger = ScaffoldMessenger.of(context);
         Navigator.pop(context);
         messenger.showSnackBar(
-          SnackBar(content: Text('ERRO AO EXCLUIR PROJETO: $e')),
+          SnackBar(content: Text('Erro ao excluir projeto: $e')),
         );
       }
     }
@@ -151,8 +156,12 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               .snapshots(),
           builder: (context, projectSnap) {
             if (!clientSnap.hasData || !projectSnap.hasData) {
-              return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()));
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: const Center(
+                  child: CircularProgressIndicator(color: dellalioGold),
+                ),
+              );
             }
 
             if (!projectSnap.data!.exists) {
@@ -161,82 +170,98 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
                   Navigator.pop(context);
                 }
               });
-              return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()));
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: const Center(
+                  child: CircularProgressIndicator(color: dellalioGold),
+                ),
+              );
             }
 
-            final clientData =
-                clientSnap.data!.data() as Map<String, dynamic>;
+            final clientData = clientSnap.data!.data() as Map<String, dynamic>;
             final projectData =
                 projectSnap.data!.data() as Map<String, dynamic>;
 
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final bg = isDark ? DellalioTheme.darkBackground : const Color(0xFFF0F2F5);
+            final String projectName =
+                (projectData['projectName'] ?? projectData['nome'])
+                    ?.toString() ??
+                "Projeto";
+
             return DefaultTabController(
               length: 4,
               child: Scaffold(
-                backgroundColor: bg,
-                appBar: AppBar(
-                  title: Text((projectData['projectName'] ??
-                          projectData['nome'])
-                      ?.toString()
-                      .toUpperCase() ??
-                      "PROJETO"),
-                  backgroundColor: petroleoColor,
-                  bottom: const TabBar(
-                    labelColor: Colors.white,
-                    unselectedLabelColor: Colors.white70,
-                    indicatorColor: Color(0xFFD4AF37),
-                    labelStyle: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13),
-                    unselectedLabelStyle: TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 13),
-                    tabs: [
-                      Tab(text: "INFO"),
-                      Tab(text: "FOTOS"),
-                      Tab(text: "PDFS"),
-                      Tab(text: "CONTRATOS"),
-                    ],
-                  ),
-                ),
-                floatingActionButton: Column(
-                  mainAxisSize: MainAxisSize.min,
+                backgroundColor: inkPageBg,
+                body: Column(
                   children: [
-                    if (_isAdmin)
-                      FloatingActionButton(
-                        heroTag: 'delete',
-                        backgroundColor: Colors.red,
-                        mini: true,
-                        child:
-                            const Icon(Icons.delete, color: Colors.white),
-                        onPressed: _deleteProject,
-                      ),
-                    if (_isAdmin) const SizedBox(height: 8),
-                    FloatingActionButton(
-                      heroTag: 'edit',
-                      backgroundColor: petroleoColor,
-                      child:
-                          const Icon(Icons.edit, color: Colors.white),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditProjectScreen(
-                              clientId: widget.clientId,
-                              projectId: widget.projectId,
+                    DellalioSubHeader(
+                      title: projectName,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (_isAdmin)
+                            IconButton(
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: panelRust,
+                              ),
+                              tooltip: "Excluir projeto",
+                              onPressed: _deleteProject,
                             ),
+                          IconButton(
+                            icon: const Icon(
+                              Icons.edit_outlined,
+                              color: dellalioGold,
+                            ),
+                            tooltip: "Editar projeto",
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => EditProjectScreen(
+                                    clientId: widget.clientId,
+                                    projectId: widget.projectId,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-                body: TabBarView(
-                  children: [
-                    _buildInfoTab(clientData, projectData),
-                    _buildGalleryTab(projectData['galleryUrls']),
-                    _buildFilesTab(projectData['files']),
-                    _buildDocumentsTab(projectData['contratos']),
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border(bottom: BorderSide(color: hairline)),
+                      ),
+                      child: TabBar(
+                        indicatorColor: dellalioGold,
+                        labelColor: panelIvory,
+                        unselectedLabelColor: panelSlate,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        unselectedLabelStyle: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                        tabs: const [
+                          Tab(text: "Info"),
+                          Tab(text: "Fotos"),
+                          Tab(text: "PDFs"),
+                          Tab(text: "Documentos"),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          _buildInfoTab(clientData, projectData),
+                          _buildGalleryTab(projectData['galleryUrls']),
+                          _buildFilesTab(projectData['files']),
+                          _buildDocumentsTab(projectData['contratos']),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -248,173 +273,99 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Widget _buildInfoTab(
-      Map<String, dynamic> client, Map<String, dynamic> project) {
-    final String projectAddress =
-        (project['address'] ?? '').toString().trim();
+    Map<String, dynamic> client,
+    Map<String, dynamic> project,
+  ) {
+    final String projectAddress = (project['address'] ?? '').toString().trim();
     final String address = projectAddress.isNotEmpty
         ? projectAddress
-        : (client['address'] ?? 'NÃO INFORMADO').toString();
+        : (client['address'] ?? 'Não informado').toString();
     final String cep = (project['cep'] ?? '').toString().trim();
     final String deliveryDate = _formatDate(project['deliveryDate']);
 
     final String corCaixa = (project['corCaixa'] ?? '').toString();
     final String corAcab = (project['corAcab'] ?? '').toString();
     final List extras = project['extras'] ?? [];
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-            final bg = isDark ? DellalioTheme.darkBackground : const Color(0xFFF0F2F5);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _sectionTitle("DADOS DO CLIENTE"),
-        Card(
-            child: ListTile(
-                leading: const Icon(Icons.person, color: petroleoColor),
-                title: Text(
-                    (client['name'] ?? '---').toString().toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("NOME"))),
-        Card(
-            child: ListTile(
-                leading: const Icon(Icons.phone, color: petroleoColor),
-                title: Text(
-                    (client['phone'] ?? '---').toString().toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("TELEFONE"))),
+        _sectionTitle("Dados do cliente"),
+        _infoTile(Icons.person, (client['name'] ?? '---').toString(), "Nome"),
+        _infoTile(
+          Icons.phone,
+          (client['phone'] ?? '---').toString(),
+          "Telefone",
+        ),
         const SizedBox(height: 16),
-        _sectionTitle("DADOS DA OBRA"),
-        Card(
-            child: ListTile(
-                leading: const Icon(Icons.home, color: petroleoColor),
-                title: Text(address.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("ENDEREÇO DA OBRA"))),
-        if (cep.isNotEmpty)
-          Card(
-              child: ListTile(
-                  leading: const Icon(Icons.markunread_mailbox,
-                      color: petroleoColor),
-                  title: Text(cep,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("CEP"))),
-        Card(
-            child: ListTile(
-                leading: const Icon(Icons.info, color: petroleoColor),
-                title: Text(
-                    (project['status'] ?? 'PENDENTE')
-                        .toString()
-                        .toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("STATUS DO PROJETO"))),
-        Card(
-            child: ListTile(
-                leading: const Icon(Icons.calendar_today,
-                    color: petroleoColor),
-                title: Text(deliveryDate.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: const Text("ENTREGA"))),
+        _sectionTitle("Dados da obra"),
+        _infoTile(Icons.home, address, "Endereço da obra"),
+        if (cep.isNotEmpty) _infoTile(Icons.markunread_mailbox, cep, "CEP"),
+        _infoTile(
+          Icons.info,
+          (project['status'] ?? 'Pendente').toString(),
+          "Status do projeto",
+        ),
+        _infoTile(Icons.calendar_today, deliveryDate, "Entrega"),
         if ((project['formaPagamento'] ?? '').toString().isNotEmpty)
-          Card(
-              child: ListTile(
-                  leading:
-                      const Icon(Icons.payments, color: petroleoColor),
-                  title: Text(
-                      project['formaPagamento']
-                          .toString()
-                          .toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("FORMA DE PAGAMENTO"))),
+          _infoTile(
+            Icons.payments,
+            project['formaPagamento'].toString(),
+            "Forma de pagamento",
+          ),
         if ((project['notes'] ?? '').toString().isNotEmpty)
-          Card(
-              child: ListTile(
-                  leading:
-                      const Icon(Icons.notes, color: petroleoColor),
-                  title: Text(project['notes'].toString(),
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("OBSERVAÇÕES"))),
+          _infoTile(Icons.notes, project['notes'].toString(), "Observações"),
         const SizedBox(height: 16),
-        _sectionTitle("ESPECIFICAÇÕES TÉCNICAS"),
+        _sectionTitle("Especificações técnicas"),
         if (corCaixa.isEmpty &&
             corAcab.isEmpty &&
             (project['valorCaixa'] == null) &&
             (project['valorAcab'] == null))
-          const Card(
-              child: ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text("NENHUMA ESPECIFICAÇÃO CADASTRADA"))),
+          _infoTile(Icons.info_outline, "Nenhuma especificação cadastrada", ""),
         if (corCaixa.isNotEmpty || project['valorCaixa'] != null)
-          Card(
-            // color: bg,
-            child: ListTile(
-              leading: const Icon(Icons.inventory_2,
-                  color: petroleoColor),
-              title: Text(
-                  corCaixa.isNotEmpty
-                      ? corCaixa.toUpperCase()
-                      : 'NÃO INFORMADA',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("COR DA CAIXARIA"),
-              trailing: Text(
-                  "R\$ ${_formatMoney(project['valorCaixa'])}",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green)),
-            ),
+          _moneyTile(
+            Icons.inventory_2,
+            corCaixa.isNotEmpty ? corCaixa : 'Não informada',
+            "Cor da caixaria",
+            project['valorCaixa'],
           ),
         if (corAcab.isNotEmpty || project['valorAcab'] != null)
-          Card(
-            // color: bg,
-            child: ListTile(
-              leading:
-                  const Icon(Icons.brush, color: petroleoColor),
-              title: Text(
-                  corAcab.isNotEmpty
-                      ? corAcab.toUpperCase()
-                      : 'NÃO INFORMADO',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: const Text("COR DO ACABAMENTO"),
-              trailing: Text(
-                  "R\$ ${_formatMoney(project['valorAcab'])}",
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green)),
-            ),
+          _moneyTile(
+            Icons.brush,
+            corAcab.isNotEmpty ? corAcab : 'Não informado',
+            "Cor do acabamento",
+            project['valorAcab'],
           ),
         if (extras.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _sectionTitle("EXTRAS / ADICIONAIS"),
+          _sectionTitle("Extras / adicionais"),
           ...extras.map((ex) {
             final Map exMap = ex as Map;
-            final String nome =
-                (exMap['nome'] ?? exMap['desc'] ?? 'EXTRA').toString();
-            return Card(
-              child: ListTile(
-                leading: const Icon(Icons.add_box,
-                    color: petroleoColor),
-                title: Text(nome.toUpperCase(),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                trailing: Text("R\$ ${_formatMoney(exMap['valor'])}",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green)),
-              ),
-            );
+            final String nome = (exMap['nome'] ?? exMap['desc'] ?? 'Extra')
+                .toString();
+            return _moneyTile(Icons.add_box, nome, '', exMap['valor']);
           }),
         ],
         const SizedBox(height: 16),
-        _sectionTitle("VALOR TOTAL"),
-        Card(
-          color: Colors.green,
+        _sectionTitle("Valor total"),
+        Container(
+          decoration: BoxDecoration(
+            color: panelSage,
+            borderRadius: BorderRadius.circular(8),
+          ),
           child: ListTile(
-            leading:
-                const Icon(Icons.attach_money, color: Colors.white),
+            leading: const Icon(Icons.attach_money, color: Colors.white),
             title: Text(
               "R\$ ${_formatMoney(project['valor'] ?? project['valorTotal'])}",
               style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: Colors.white),
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.white,
+              ),
             ),
-            subtitle: const Text("VALOR DO PROJETO"),
+            subtitle: const Text(
+              "Valor do projeto",
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
         ),
       ],
@@ -426,36 +377,109 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
       padding: const EdgeInsets.only(bottom: 8, top: 4),
       child: Text(
         text,
-        style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            color: petroleoColor),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: panelSlate,
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(IconData icon, String title, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: inkSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: hairline),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: dellalioGold),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: panelIvory,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: subtitle.isNotEmpty
+            ? Text(
+                subtitle,
+                style: TextStyle(color: panelSlateDim, fontSize: 11),
+              )
+            : null,
+      ),
+    );
+  }
+
+  Widget _moneyTile(
+    IconData icon,
+    String title,
+    String subtitle,
+    dynamic value,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: inkSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: hairline),
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: dellalioGold),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: panelIvory,
+            fontSize: 14,
+          ),
+        ),
+        subtitle: subtitle.isNotEmpty
+            ? Text(
+                subtitle,
+                style: TextStyle(color: panelSlateDim, fontSize: 11),
+              )
+            : null,
+        trailing: Text(
+          "R\$ ${_formatMoney(value)}",
+          style: const TextStyle(fontWeight: FontWeight.bold, color: panelSage),
+        ),
       ),
     );
   }
 
   Widget _buildGalleryTab(List<dynamic>? urls) {
     if (urls == null || urls.isEmpty)
-      return const Center(child: Text("NENHUMA FOTO"));
+      return const DellalioEmptyState(
+        icon: Icons.photo_outlined,
+        title: "Nenhuma foto",
+      );
     return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10),
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+      ),
       itemCount: urls.length,
       itemBuilder: (ctx, i) {
         final String url = urls[i]?.toString() ?? '';
         if (url.isEmpty) return const SizedBox.shrink();
         return InkWell(
           onTap: () => showDialog(
-              context: ctx,
-              builder: (_) =>
-                  Dialog(child: CachedNetworkImage(imageUrl: url))),
+            context: ctx,
+            builder: (_) => Dialog(child: CachedNetworkImage(imageUrl: url)),
+          ),
           child: CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
             errorWidget: (context, url, error) => Container(
-                color: Colors.grey[300],
-                child: const Icon(Icons.broken_image)),
+              color: inkSurface,
+              child: Icon(Icons.broken_image, color: panelSlate),
+            ),
           ),
         );
       },
@@ -463,53 +487,10 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   }
 
   Widget _buildFilesTab(List<dynamic>? files) {
-    if (files == null || files.isEmpty)
-      return const Center(child: Text("NENHUM ARQUIVO"));
-    return ListView.builder(
-      itemCount: files.length,
-      itemBuilder: (ctx, i) {
-        final dynamic raw = files[i];
-        final String name =
-            (raw is Map) ? (raw['name']?.toString() ?? 'ARQUIVO') : 'ARQUIVO';
-        final String? url = (raw is Map) ? raw['url']?.toString() : null;
-        return Card(
-          child: ListTile(
-            leading:
-                const Icon(Icons.picture_as_pdf, color: Colors.red),
-            title: Text(name.toUpperCase()),
-            onTap: url == null
-                ? null
-                : () => launchUrl(Uri.parse(url),
-                    mode: LaunchMode.externalApplication),
-          ),
-        );
-      },
-    );
+    return PdfCoverGrid(items: files, emptyTitle: "Nenhum arquivo");
   }
 
   Widget _buildDocumentsTab(List<dynamic>? docs) {
-    if (docs == null || docs.isEmpty)
-      return const Center(child: Text("NENHUM DOCUMENTO"));
-    return ListView.builder(
-      itemCount: docs.length,
-      itemBuilder: (ctx, i) {
-        final dynamic raw = docs[i];
-        final String name = (raw is Map)
-            ? (raw['name']?.toString() ?? 'DOCUMENTO')
-            : 'DOCUMENTO';
-        final String? url = (raw is Map) ? raw['url']?.toString() : null;
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.description,
-                color: petroleoColor),
-            title: Text(name.toUpperCase()),
-            onTap: url == null
-                ? null
-                : () => launchUrl(Uri.parse(url),
-                    mode: LaunchMode.externalApplication),
-          ),
-        );
-      },
-    );
+    return PdfCoverGrid(items: docs, emptyTitle: "Nenhum documento");
   }
 }

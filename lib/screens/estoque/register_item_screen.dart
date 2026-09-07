@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 import '../../models/item_model.dart';
 
 class RegisterItemScreen extends StatefulWidget {
@@ -31,16 +33,6 @@ class _RegisterItemScreenState extends State<RegisterItemScreen> {
     'Acessórios / Outros',
   ];
 
-  // Estilo personalizado para os campos de texto
-  InputDecoration _inputDecoration(String label) => InputDecoration(
-    labelText: label,
-    enabledBorder: const UnderlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFFD4AF37)),
-    ),
-    focusedBorder: const UnderlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFFD4AF37), width: 2),
-    ),
-  );
 
   Future<void> _pickImage() async {
     FilePickerResult? result = await FilePicker.pickFiles(
@@ -101,19 +93,15 @@ class _RegisterItemScreenState extends State<RegisterItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: AppBar(
-        title: const Text(
-          'NOVO INSUMO',
-          style: TextStyle(color: Color(0xFFD4AF37)),
-        ),
-        backgroundColor: const Color(0xFF1E1E1E),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: SingleChildScrollView(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Novo insumo"),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Form(
               key: _formKey,
@@ -125,15 +113,16 @@ class _RegisterItemScreenState extends State<RegisterItemScreen> {
                     child: Container(
                       height: 180,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
+                        color: inkSurface,
                         borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: hairline),
                       ),
                       child: _imageBytes == null
                           ? const Center(
                               child: Icon(
                                 Icons.add_a_photo,
                                 size: 50,
-                                color: Color(0xFFD4AF37),
+                                color: dellalioGold,
                               ),
                             )
                           : ClipRRect(
@@ -146,75 +135,92 @@ class _RegisterItemScreenState extends State<RegisterItemScreen> {
                     ),
                   ),
                   const SizedBox(height: 25),
-                  TextFormField(
+                  DellalioFormField(
                     controller: _nameController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: _inputDecoration('NOME DO COMPONENTE'),
+                    label: "Nome do componente",
+                    icon: Icons.widgets_outlined,
                     validator: (v) => v!.isEmpty ? 'Campo obrigatório' : null,
                   ),
                   const SizedBox(height: 15),
-                  Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(canvasColor: const Color(0xFF1E1E1E)),
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedCategory,
-                      dropdownColor: const Color(0xFF1E1E1E),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('CATEGORIA'),
-                      items: _categories
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => _selectedCategory = v!),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCategory,
+                    dropdownColor: inkSurface,
+                    style: TextStyle(color: panelIvory, fontSize: 13.5),
+                    decoration: InputDecoration(
+                      labelText: "Categoria",
+                      labelStyle: TextStyle(color: panelSlate, fontSize: 13),
+                      filled: true,
+                      fillColor: inkSurface,
+                      prefixIcon: Icon(Icons.category_outlined,
+                          size: 18, color: panelSlate),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: hairline),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                            color: hairlineNavy, width: 1.4),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: hairline),
+                      ),
                     ),
+                    items: _categories
+                        .map(
+                          (c) => DropdownMenuItem(value: c, child: Text(c)),
+                        )
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedCategory = v!),
                   ),
                   const SizedBox(height: 15),
                   Row(
                     children: [
                       Expanded(
-                        child: TextFormField(
+                        child: DellalioFormField(
                           controller: _qtyController,
+                          label: "Qtd inicial",
+                          icon: Icons.inventory_2_outlined,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration('QTD INICIAL'),
                           validator: (v) => v!.isEmpty ? 'Obrigatório' : null,
                         ),
                       ),
                       const SizedBox(width: 15),
                       Expanded(
-                        child: TextFormField(
+                        child: DellalioFormField(
                           controller: _minQtyController,
+                          label: "Estoque mínimo",
+                          icon: Icons.notification_important_outlined,
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: Colors.white),
-                          decoration: _inputDecoration('ESTOQUE MÍNIMO'),
                           validator: (v) => v!.isEmpty ? 'Obrigatório' : null,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 40),
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _saveItem,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 20),
+                  if (_isLoading)
+                    const Center(
+                      child: CircularProgressIndicator(color: dellalioGold),
+                    )
+                  else
+                    DellalioGoldButton(
+                      label: "Salvar no estoque",
+                      icon: Icons.save_outlined,
+                      fullWidth: true,
+                      onPressed: _saveItem,
                     ),
-                    child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.black)
-                        : const Text(
-                            'SALVAR NO ESTOQUE',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
+    ),
+    ],
+    ),
     );
   }
 }

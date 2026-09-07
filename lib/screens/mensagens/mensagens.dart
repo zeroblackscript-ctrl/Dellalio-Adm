@@ -1,16 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../../core/people_service.dart';
+import '../../core/theme.dart';
+import '../../core/user_session.dart';
 import 'chat.dart';
 import 'new_chat_screen.dart';
-import '../../core/people_service.dart';
-import '../../core/user_session.dart';
-import '../../core/theme.dart';
-
 
 class MensagensScreen extends StatelessWidget {
   const MensagensScreen({super.key});
-
 
   void _openNewChat(BuildContext context) {
     Navigator.push(
@@ -23,47 +23,71 @@ class MensagensScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final myUid = FirebaseAuth.instance.currentUser?.uid;
     final isAdmin = UserSession.isAdmin();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(title: const Text("CONVERSAS"), backgroundColor: petroleoColor),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openNewChat(context),
-        child: const Icon(Icons.add),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: _buildChatStream(myUid, isAdmin),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _buildFallbackFilteredByParticipant(context, myUid, isAdmin);
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final docs = _filterValidChats(snapshot.data!.docs, myUid, isAdmin);
-          return _buildList(context, docs, myUid);
-        },
+      backgroundColor: inkPageBg,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(34, 30, 34, 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    "Conversas",
+                    style: TextStyle(
+                      fontFamily: 'Fraunces',
+                      fontWeight: FontWeight.w500,
+                      fontSize: 27,
+                      color: dellalioTitle,
+                    ),
+                  ),
+                ),
+                _NewChatButton(onTap: () => _openNewChat(context)),
+              ],
+            ),
+          ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _buildChatStream(myUid, isAdmin),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return _buildFallbackFilteredByParticipant(
+                    context,
+                    myUid,
+                    isAdmin,
+                  );
+                }
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: dellalioGold),
+                  );
+                }
+                final docs = _filterValidChats(
+                  snapshot.data!.docs,
+                  myUid,
+                  isAdmin,
+                );
+                return _buildList(context, docs, myUid);
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Retorna a stream de chats adequada:
-  /// - Admin: TODOS os chats do sistema, ordenados por lastMessageAt
-  /// - Usuário comum: apenas chats onde é participante
   Stream<QuerySnapshot>? _buildChatStream(String? myUid, bool isAdmin) {
     if (myUid == null && !isAdmin) return null;
 
     if (isAdmin) {
-      // Admin vê todas as conversas do sistema
       return FirebaseFirestore.instance
           .collection('chats')
           .orderBy('lastMessageAt', descending: true)
           .snapshots();
     }
 
-    // Usuário comum vê apenas suas conversas
     return FirebaseFirestore.instance
         .collection('chats')
         .where('participants', arrayContains: myUid)
@@ -71,17 +95,12 @@ class MensagensScreen extends StatelessWidget {
         .snapshots();
   }
 
-  /// Filtra os chats:
-  /// - Admin: vê todos os chats (sem filtro de participants)
-  /// - Usuário comum: apenas chats onde [myUid] está nos participants
   List<QueryDocumentSnapshot> _filterValidChats(
     List<QueryDocumentSnapshot> docs,
     String? myUid,
     bool isAdmin,
   ) {
-    // Admin vê tudo
     if (isAdmin) return docs;
-
     if (myUid == null) return [];
     return docs.where((doc) {
       final data = doc.data() as Map<String, dynamic>?;
@@ -92,23 +111,31 @@ class MensagensScreen extends StatelessWidget {
     }).toList();
   }
 
-  // Fallback SEGURO: ainda filtra por participants (arrayContains), apenas
-  // sem o orderBy, evitando expor conversas de outros usuários caso o
-  // índice composto não exista.
-  Widget _buildFallbackFilteredByParticipant(BuildContext context, String? myUid, bool isAdmin) {
+  Widget _buildFallbackFilteredByParticipant(
+    BuildContext context,
+    String? myUid,
+    bool isAdmin,
+  ) {
     if (myUid == null && !isAdmin) {
-      return const Center(child: Text("Nenhuma conversa ainda."));
+      return Center(
+        child: Text(
+          "Nenhuma conversa ainda.",
+          style: TextStyle(color: panelSlate),
+        ),
+      );
     }
     return StreamBuilder<QuerySnapshot>(
       stream: isAdmin
           ? FirebaseFirestore.instance.collection('chats').snapshots()
           : FirebaseFirestore.instance
-              .collection('chats')
-              .where('participants', arrayContains: myUid)
-              .snapshots(),
+                .collection('chats')
+                .where('participants', arrayContains: myUid)
+                .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: dellalioGold),
+          );
         }
         final docs = _filterValidChats(snapshot.data!.docs, myUid, isAdmin);
         docs.sort((a, b) {
@@ -126,14 +153,19 @@ class MensagensScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _deleteChat(BuildContext context, String chatId, String title, {required bool isGroup}) async {
-    // Grupos só podem ser excluídos pelo administrador. Chats individuais
-    // continuam podendo ser excluídos por qualquer um dos participantes.
+  Future<void> _deleteChat(
+    BuildContext context,
+    String chatId,
+    String title, {
+    required bool isGroup,
+  }) async {
     if (isGroup && !UserSession.isAdmin()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Apenas o administrador pode excluir uma conversa em grupo."),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text(
+            "Apenas o administrador pode excluir uma conversa em grupo.",
+          ),
+          backgroundColor: panelRust,
         ),
       );
       return;
@@ -142,23 +174,32 @@ class MensagensScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Excluir Conversa"),
-        content: Text('Tem certeza que deseja excluir "$title"? Todas as mensagens serão apagadas permanentemente.'),
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text("Excluir conversa", style: TextStyle(color: panelIvory)),
+        content: Text(
+          'Tem certeza que deseja excluir "$title"? Todas as mensagens serão apagadas permanentemente.',
+          style: TextStyle(color: panelSlate),
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("CANCELAR")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text("Cancelar", style: TextStyle(color: panelSlate)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("EXCLUIR", style: TextStyle(color: Colors.red)),
+            child: const Text("Excluir", style: TextStyle(color: panelRust)),
           ),
         ],
       ),
     );
 
-
     if (confirm != true) return;
 
     try {
-      final chatRef = FirebaseFirestore.instance.collection('chats').doc(chatId);
+      final chatRef = FirebaseFirestore.instance
+          .collection('chats')
+          .doc(chatId);
       final messagesSnap = await chatRef.collection('messages').get();
 
       WriteBatch batch = FirebaseFirestore.instance.batch();
@@ -175,9 +216,9 @@ class MensagensScreen extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erro ao excluir conversa: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Erro ao excluir conversa: $e")));
       }
     }
   }
@@ -188,12 +229,16 @@ class MensagensScreen extends StatelessWidget {
     String? myUid,
   ) {
     if (docs.isEmpty) {
-      return const Center(child: Text("Nenhuma conversa ainda."));
+      return Center(
+        child: Text(
+          "Nenhuma conversa ainda.",
+          style: TextStyle(color: panelSlate),
+        ),
+      );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       itemCount: docs.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final chat = docs[index];
         final data = chat.data() as Map<String, dynamic>;
@@ -215,124 +260,191 @@ class MensagensScreen extends StatelessWidget {
                 final displayName = person?.fullName.isNotEmpty == true
                     ? person!.fullName
                     : name;
-                return _buildChatCard(
-                  context,
+                return _ChatRow(
                   chatId: chat.id,
                   title: displayName,
                   subtitle: lastMessage,
                   photoUrl: person?.fotoUrl ?? '',
                   isGroup: false,
+                  delayIndex: index % 14,
+                  onDelete: () => _deleteChat(
+                    context,
+                    chat.id,
+                    displayName,
+                    isGroup: false,
+                  ),
                 );
               },
             );
           }
         }
 
-        return _buildChatCard(
-          context,
+        return _ChatRow(
           chatId: chat.id,
           title: name,
           subtitle: lastMessage,
           photoUrl: '',
           isGroup: true,
+          delayIndex: index % 14,
+          onDelete: () => _deleteChat(context, chat.id, name, isGroup: true),
         );
       },
     );
   }
+}
 
-  Widget _buildChatCard(
-    BuildContext context, {
-    required String chatId,
-    required String title,
-    required String subtitle,
-    required String photoUrl,
-    required bool isGroup,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-    final cardBorder = isDark ? Colors.white24 : Colors.black87;
-    final cardText = isDark ? Colors.white : Colors.black87;
-    final cardSubtitle = isDark ? Colors.white70 : Colors.black54;
-    final avatarBg = isDark ? Colors.white10 : Colors.black12;
-    final avatarIcon = isDark ? Colors.white70 : Colors.black87;
+class _NewChatButton extends StatefulWidget {
+  final VoidCallback onTap;
+  const _NewChatButton({required this.onTap});
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(chatId: chatId, chatName: title),
+  @override
+  State<_NewChatButton> createState() => _NewChatButtonState();
+}
+
+class _NewChatButtonState extends State<_NewChatButton> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _hover ? dellalioGoldSoft : dellalioGold,
+          ),
+          child: Icon(Icons.add, color: inkPageBg, size: 18),
         ),
       ),
-      onLongPress: () => _deleteChat(context, chatId, title, isGroup: isGroup),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          border: Border.all(color: cardBorder, width: 2.0),
+    );
+  }
+}
 
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(5),
-            topRight: Radius.circular(20),
-            bottomLeft: Radius.circular(20),
-            bottomRight: Radius.circular(5),
+class _ChatRow extends StatefulWidget {
+  final String chatId;
+  final String title;
+  final String subtitle;
+  final String photoUrl;
+  final bool isGroup;
+  final int delayIndex;
+  final VoidCallback onDelete;
+
+  const _ChatRow({
+    required this.chatId,
+    required this.title,
+    required this.subtitle,
+    required this.photoUrl,
+    required this.isGroup,
+    required this.delayIndex,
+    required this.onDelete,
+  });
+
+  @override
+  State<_ChatRow> createState() => _ChatRowState();
+}
+
+class _ChatRowState extends State<_ChatRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool canDelete = !widget.isGroup || UserSession.isAdmin();
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ChatScreen(chatId: widget.chatId, chatName: widget.title),
           ),
-          boxShadow: isDark ? null : const [
-            BoxShadow(color: Colors.black87, offset: Offset(3, 3)),
-          ],
         ),
-        child: Row(
-          children: [
-            isGroup
-                ? CircleAvatar(
-                    radius: 22,
-                    backgroundColor: avatarBg,
-                    child: Icon(Icons.forum, color: avatarIcon),
-                  )
-                : CircleAvatar(
-                    radius: 22,
-                    backgroundColor: avatarBg,
-                    backgroundImage:
-                        photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
-                    child: photoUrl.isEmpty
-                        ? Icon(Icons.person, color: avatarIcon)
-                        : null,
+        onLongPress: widget.onDelete,
+        child:
+            AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  margin: const EdgeInsets.only(bottom: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
                   ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title.toUpperCase(),
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: cardText,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  decoration: BoxDecoration(
+                    color: _hover ? inkSurface : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  if (subtitle.isNotEmpty)
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: cardSubtitle,
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 19,
+                        backgroundColor: inkSurfaceHover,
+                        backgroundImage: widget.photoUrl.isNotEmpty
+                            ? NetworkImage(widget.photoUrl)
+                            : null,
+                        child: (widget.isGroup || widget.photoUrl.isEmpty)
+                            ? Icon(
+                                widget.isGroup
+                                    ? Icons.forum_outlined
+                                    : Icons.person_outline,
+                                size: 17,
+                                color: panelSlate,
+                              )
+                            : null,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                ],
-              ),
-            ),
-            if (!isGroup || UserSession.isAdmin())
-              IconButton(
-                icon: Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                tooltip: 'EXCLUIR CONVERSA',
-                onPressed: () => _deleteChat(context, chatId, title, isGroup: isGroup),
-              ),
-
-          ],
-        ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: panelIvory,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (widget.subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.subtitle,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  color: panelSlate,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (canDelete && _hover)
+                        GestureDetector(
+                          onTap: widget.onDelete,
+                          child: Icon(
+                            Icons.delete_outline,
+                            size: 17,
+                            color: panelRust,
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+                .animate(delay: (40 * widget.delayIndex).ms)
+                .fadeIn(duration: 350.ms)
+                .slideX(begin: -0.03, end: 0, curve: Curves.easeOut),
       ),
     );
   }

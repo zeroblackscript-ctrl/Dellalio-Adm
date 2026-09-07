@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 import '../../core/user_session.dart';
 
 class EditItemScreen extends StatefulWidget {
@@ -50,15 +52,6 @@ class _EditItemScreenState extends State<EditItemScreen> {
     _selectedCategory = widget.data['category'] ?? _categories.first;
   }
 
-  InputDecoration _inputDecoration(String label) => InputDecoration(
-    labelText: label,
-    enabledBorder: const UnderlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFFD4AF37)),
-    ),
-    focusedBorder: const UnderlineInputBorder(
-      borderSide: BorderSide(color: Color(0xFFD4AF37), width: 2),
-    ),
-  );
 
   void _updateItem() async {
     if (!_formKey.currentState!.validate()) return;
@@ -120,23 +113,24 @@ class _EditItemScreenState extends State<EditItemScreen> {
     bool? confirm = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        title: const Text(
-          "Excluir Item",
-          style: TextStyle(color: Colors.white),
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text(
+          "Excluir item",
+          style: TextStyle(color: panelIvory),
         ),
-        content: const Text(
+        content: Text(
           "Tem certeza que deseja remover este item do estoque?",
-          style: TextStyle(color: Colors.white70),
+          style: TextStyle(color: panelSlate),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar"),
+            child: Text("Cancelar", style: TextStyle(color: panelSlate)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Excluir", style: TextStyle(color: Colors.red)),
+            child: const Text("Excluir", style: TextStyle(color: panelRust)),
           ),
         ],
       ),
@@ -164,26 +158,24 @@ class _EditItemScreenState extends State<EditItemScreen> {
     final bool isAdmin = UserSession.isAdmin();
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: AppBar(
-        title: Text(
-          isAdmin ? "EDITAR INSUMO" : "DETALHES DO INSUMO",
-          style: const TextStyle(color: Color(0xFFD4AF37)),
-        ),
-        backgroundColor: const Color(0xFF1E1E1E),
-        iconTheme: const IconThemeData(color: Color(0xFFD4AF37)),
-        actions: [
-          if (isAdmin)
-            IconButton(
-              icon: const Icon(Icons.delete, color: Colors.redAccent),
-              onPressed: _deleteItem,
-            ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: SingleChildScrollView(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          DellalioSubHeader(
+            title: isAdmin ? "Editar insumo" : "Detalhes do insumo",
+            trailing: isAdmin
+                ? IconButton(
+                    icon: const Icon(Icons.delete_outline, color: panelRust),
+                    tooltip: "Excluir item",
+                    onPressed: _deleteItem,
+                  )
+                : null,
+          ),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Form(
               key: _formKey,
@@ -226,19 +218,41 @@ class _EditItemScreenState extends State<EditItemScreen> {
                             ),
                     ),
                     const SizedBox(height: 25),
-                    TextFormField(
+                    DellalioFormField(
                       controller: _nameController,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('NOME DO COMPONENTE'),
+                      label: "Nome do componente",
+                      icon: Icons.widgets_outlined,
                       validator: (v) =>
                           v!.isEmpty ? 'Campo obrigatório' : null,
                     ),
                     const SizedBox(height: 15),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedCategory,
-                      dropdownColor: const Color(0xFF1E1E1E),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: _inputDecoration('CATEGORIA'),
+                      dropdownColor: inkSurface,
+                      style: TextStyle(color: panelIvory, fontSize: 13.5),
+                      decoration: InputDecoration(
+                        labelText: "Categoria",
+                        labelStyle: TextStyle(color: panelSlate, fontSize: 13),
+                        filled: true,
+                        fillColor: inkSurface,
+                        prefixIcon: Icon(Icons.category_outlined,
+                            size: 18, color: panelSlate),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(
+                              color: hairlineNavy, width: 1.4),
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide(color: hairline),
+                        ),
+                      ),
                       items: _categories
                           .map(
                             (c) =>
@@ -251,22 +265,22 @@ class _EditItemScreenState extends State<EditItemScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: TextFormField(
+                          child: DellalioFormField(
                             controller: _qtyController,
+                            label: "Qtd atual",
+                            icon: Icons.inventory_2_outlined,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: _inputDecoration('QTD ATUAL'),
                             validator: (v) =>
                                 v!.isEmpty ? 'Obrigatório' : null,
                           ),
                         ),
                         const SizedBox(width: 15),
                         Expanded(
-                          child: TextFormField(
+                          child: DellalioFormField(
                             controller: _minQtyController,
+                            label: "Estoque mínimo",
+                            icon: Icons.notification_important_outlined,
                             keyboardType: TextInputType.number,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: _inputDecoration('ESTOQUE MÍNIMO'),
                             validator: (v) =>
                                 v!.isEmpty ? 'Obrigatório' : null,
                           ),
@@ -275,29 +289,24 @@ class _EditItemScreenState extends State<EditItemScreen> {
                     ),
                     const SizedBox(height: 40),
                     if (isAdmin)
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _updateItem,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD4AF37),
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 20),
+                      if (_isLoading)
+                        const Center(
+                          child: CircularProgressIndicator(color: dellalioGold),
+                        )
+                      else
+                        DellalioGoldButton(
+                          label: "Salvar alterações",
+                          icon: Icons.save_outlined,
+                          fullWidth: true,
+                          onPressed: _updateItem,
                         ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                                color: Colors.black,
-                              )
-                            : const Text(
-                                "SALVAR ALTERAÇÕES",
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                      ),
                     if (!isAdmin)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(top: 8),
                         child: Text(
                           "Apenas o administrador pode editar itens do estoque.",
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(color: panelSlateDim, fontSize: 12),
                         ),
                       ),
                   ],
@@ -307,6 +316,9 @@ class _EditItemScreenState extends State<EditItemScreen> {
           ),
         ),
       ),
+    ),
+    ],
+    ),
     );
   }
 }

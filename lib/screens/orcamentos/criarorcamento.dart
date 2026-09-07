@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 
 class CreateFullClientAndBudgetScreen extends StatefulWidget {
   final String? preselectedClientId;
@@ -88,11 +90,8 @@ class _CreateFullClientAndBudgetScreenState extends State<CreateFullClientAndBud
             controller: controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             textAlign: TextAlign.right,
-            decoration: InputDecoration(
-              labelText: label,
-              border: const OutlineInputBorder(),
-              prefixText: "R\$ ",
-            ),
+            style: TextStyle(color: panelIvory, fontSize: 13.5),
+            decoration: _dialogDecoration(label, prefixText: "R\$ "),
             onChanged: (value) {
               // Regra: mantemos apenas números.
               // Se o usuário digitar, atualizamos a tela para o cálculo do total
@@ -102,26 +101,34 @@ class _CreateFullClientAndBudgetScreenState extends State<CreateFullClientAndBud
         }
 
         return AlertDialog(
-          title: Text("Configurar: $ambiente"),
+          backgroundColor: inkSurface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          title: Text("Configurar: $ambiente",
+              style: TextStyle(color: panelIvory, fontWeight: FontWeight.w600, fontSize: 18)),
           content: SingleChildScrollView(
             child: Column(children: [
               TextFormField(
                 controller: dados['cor caixa'],
-                decoration: const InputDecoration(labelText: "Cor da Caixaria", border: OutlineInputBorder())
+                style: TextStyle(color: panelIvory, fontSize: 13.5),
+                decoration: _dialogDecoration("Cor da caixaria"),
               ),
               const SizedBox(height: 10),
-              buildMoneyField(dados['val caixa'], "Valor Caixaria"),
+              buildMoneyField(dados['val caixa'], "Valor caixaria"),
               const SizedBox(height: 10),
               TextFormField(
                 controller: dados['cor acab'],
-                decoration: const InputDecoration(labelText: "Cor dos Acabamentos", border: OutlineInputBorder())
+                style: TextStyle(color: panelIvory, fontSize: 13.5),
+                decoration: _dialogDecoration("Cor dos acabamentos"),
               ),
               const Divider(),
 
-              const Text("EXTRAS:"),
+              Text("Extras:",
+                  style: TextStyle(color: panelSlate, fontWeight: FontWeight.w600)),
               ListTile(
-                leading: const Icon(Icons.add_circle, color: Colors.green),
-                title: const Text("Adicionar Extra"),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.add_circle, color: dellalioGold),
+                title: Text("Adicionar extra",
+                    style: TextStyle(color: panelIvory, fontSize: 14)),
                 onTap: () => setDialogState(() {
                   (dados['extras'] as List).add({
                     'desc': TextEditingController(),
@@ -130,18 +137,50 @@ class _CreateFullClientAndBudgetScreenState extends State<CreateFullClientAndBud
                 }),
               ),
               ...(dados['extras'] as List).map((extra) => Row(children: [
-                Expanded(child: TextFormField(controller: extra['desc'], decoration: const InputDecoration(labelText: "Descrição"))),
+                Expanded(child: TextFormField(
+                    controller: extra['desc'],
+                    style: TextStyle(color: panelIvory, fontSize: 13.5),
+                    decoration: _dialogDecoration("Descrição"))),
                 const SizedBox(width: 5),
                 Expanded(child: buildMoneyField(extra['val'], "Valor")),
               ])),
               const Divider(),
-              Text("TOTAL: R\$ ${_calcularTotalAmbiente(ambiente).toStringAsFixed(2)}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text("Total: R\$ ${_calcularTotalAmbiente(ambiente).toStringAsFixed(2)}",
+                  style: TextStyle(color: panelIvory, fontWeight: FontWeight.bold, fontSize: 18)),
             ]),
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Fechar"))],
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text("Fechar", style: TextStyle(color: panelSlate))),
+          ],
         );
       }),
     ).then((_) => setState(() {}));
+  }
+
+  InputDecoration _dialogDecoration(String label, {String? prefixText}) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: TextStyle(color: panelSlate, fontSize: 13),
+      prefixText: prefixText,
+      prefixStyle: TextStyle(color: panelSlate),
+      filled: true,
+      fillColor: inkSurface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: hairline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: hairlineNavy, width: 1.4),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: hairline),
+      ),
+    );
   }
 
   double _calcularTotalAmbiente(String ambiente) {
@@ -216,39 +255,73 @@ class _CreateFullClientAndBudgetScreenState extends State<CreateFullClientAndBud
   @override
   Widget build(BuildContext context) {
     if (_isLoadingClient) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Scaffold(
+        backgroundColor: inkPageBg,
+        body: Column(
+          children: [
+            const DellalioSubHeader(title: "Novo projeto"),
+            const Expanded(child: Center(child: CircularProgressIndicator(color: dellalioGold))),
+          ],
+        ),
+      );
     }
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.preselectedClientId != null
-            ? "NOVO PROJETO PARA CLIENTE EXISTENTE"
-            : "ORÇAMENTO PREMIUM"),
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          DellalioSubHeader(
+            title: widget.preselectedClientId != null
+                ? "Novo projeto para cliente existente"
+                : "Orçamento premium",
+          ),
+          Expanded(
+            child: Row(children: [
+              Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Form(key: _formKey, child: Column(children: [
+                DellalioFormField(controller: _nameController, label: "Nome", icon: Icons.person_outline, readOnly: widget.preselectedClientId != null),
+                const SizedBox(height: 14),
+                DellalioFormField(controller: _phoneController, label: "Telefone", icon: Icons.phone_outlined, readOnly: widget.preselectedClientId != null),
+                const SizedBox(height: 14),
+                DellalioFormField(controller: _addressController, label: "Endereço", icon: Icons.home_outlined, readOnly: widget.preselectedClientId != null),
+                const SizedBox(height: 14),
+                DellalioFormField(controller: _notesController, label: "Observações", icon: Icons.notes_outlined),
+              ])))),
+              Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: _ambientes.map((a) => FilterChip(
+                    label: Text(a, style: TextStyle(color: _selecionados[a]! ? inkPageBg : panelSlate, fontSize: 12.5)),
+                    selected: _selecionados[a]!,
+                    selectedColor: dellalioGold,
+                    backgroundColor: inkSurface,
+                    checkmarkColor: inkPageBg,
+                    side: BorderSide(color: _selecionados[a]! ? dellalioGold : hairline),
+                    onSelected: (v) {
+                      if (v) {
+                        _garantirDadosDoAmbiente(a); // Garante a criação ANTES de atualizar a tela
+                      }
+                      setState(() => _selecionados[a] = v);
+                      if (v) _configurarAmbiente(a);
+                    }
+                  )).toList()),
+                const Divider(),
+                Text("Total geral: R\$ ${_totalGeral.toStringAsFixed(2)}",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: panelIvory)),
+                const SizedBox(height: 16),
+                if (_isLoading)
+                  const Center(child: CircularProgressIndicator(color: dellalioGold))
+                else
+                  DellalioGoldButton(
+                    label: "Salvar orçamento",
+                    icon: Icons.save_outlined,
+                    fullWidth: true,
+                    onPressed: _saveAll,
+                  ),
+              ]))),
+            ]),
+          ),
+        ],
       ),
-      body: Row(children: [
-        Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Form(key: _formKey, child: Column(children: [
-          TextFormField(controller: _nameController, readOnly: widget.preselectedClientId != null, decoration: const InputDecoration(labelText: "Nome")),
-          TextFormField(controller: _phoneController, readOnly: widget.preselectedClientId != null, decoration: const InputDecoration(labelText: "Telefone")),
-          TextFormField(controller: _addressController, readOnly: widget.preselectedClientId != null, decoration: const InputDecoration(labelText: "Endereço")),
-          TextFormField(controller: _notesController, decoration: const InputDecoration(labelText: "Observações")),
-        ])))),
-
-        Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(children: [
-          Wrap(children: _ambientes.map((a) => FilterChip(
-            label: Text(a),
-            selected: _selecionados[a]!,
-            onSelected: (v) {
-              if (v) {
-                _garantirDadosDoAmbiente(a); // Garante a criação ANTES de atualizar a tela
-              }
-              setState(() => _selecionados[a] = v);
-              if (v) _configurarAmbiente(a);
-            }
-          )).toList()),
-          const Divider(),
-          Text("TOTAL GERAL: R\$ ${_totalGeral.toStringAsFixed(2)}", style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-          ElevatedButton(onPressed: _isLoading ? null : _saveAll, child: const Text("SALVAR ORÇAMENTO")),
-        ]))),
-      ]),
     );
   }
 }

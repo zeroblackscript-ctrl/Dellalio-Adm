@@ -31,6 +31,10 @@
     ],
     "rewrites": [
       {
+        "source": "/appcast.xml",
+        "destination": "/appcast.xml"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

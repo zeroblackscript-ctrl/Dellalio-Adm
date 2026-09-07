@@ -52,11 +52,4 @@ class AuthService {
     }
   }
 
-  // Logout
-  Future<void> signOut() async {
-    await _auth.signOut();
-  }
-
-  // Verificar se usuário está logado
-  User? get currentUser => _auth.currentUser;
 }

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../core/dellalio_kit.dart';
 import '../../core/people_service.dart';
+import '../../core/theme.dart';
 import 'chat.dart';
 
 /// Tela para criação de uma nova conversa, permitindo escolher entre
@@ -147,10 +149,10 @@ class _NewChatScreenState extends State<NewChatScreen>
   Widget _personAvatar(Person p, {double radius = 20}) {
     return CircleAvatar(
       radius: radius,
-      backgroundColor: Colors.black12,
+      backgroundColor: inkSurfaceHover,
       backgroundImage: p.fotoUrl.isNotEmpty ? NetworkImage(p.fotoUrl) : null,
       child: p.fotoUrl.isEmpty
-          ? Icon(Icons.person, size: radius, color: Colors.black45)
+          ? Icon(Icons.person, size: radius, color: panelSlate)
           : null,
     );
   }
@@ -158,21 +160,36 @@ class _NewChatScreenState extends State<NewChatScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Nova Conversa"),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: "GRUPO", icon: Icon(Icons.groups)),
-            Tab(text: "INDIVIDUAL", icon: Icon(Icons.person)),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      backgroundColor: inkPageBg,
+      body: Column(
         children: [
-          _buildGroupTab(),
-          _buildIndividualTab(),
+          const DellalioSubHeader(title: "Nova conversa"),
+          Container(
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: hairline)),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: dellalioGold,
+              labelColor: panelIvory,
+              unselectedLabelColor: panelSlate,
+              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              tabs: const [
+                Tab(text: "Grupo", icon: Icon(Icons.groups)),
+                Tab(text: "Individual", icon: Icon(Icons.person)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildGroupTab(),
+                _buildIndividualTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -183,58 +200,71 @@ class _NewChatScreenState extends State<NewChatScreen>
       children: [
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: TextField(
+          child: DellalioFormField(
             controller: _groupNameCtrl,
-            decoration: const InputDecoration(
-              labelText: "Nome do Grupo",
-              border: OutlineInputBorder(),
-            ),
+            label: "Nome do grupo",
+            icon: Icons.group_outlined,
           ),
         ),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.0),
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
               "Participantes (opcional):",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.w600, color: panelSlate),
             ),
           ),
         ),
         Expanded(
           child: _loadingPeople
-              ? const Center(child: CircularProgressIndicator())
+              ? const Center(child: CircularProgressIndicator(color: dellalioGold))
               : ListView.builder(
                   itemCount: _people.length,
                   itemBuilder: (context, index) {
                     final p = _people[index];
                     final selected = _selectedForGroup.contains(p.uid);
-                    return CheckboxListTile(
-                      value: selected,
-                      secondary: _personAvatar(p),
-                      title: Text(p.fullName.isEmpty ? p.uid : p.fullName),
-                      subtitle: Text(p.role.toUpperCase()),
-                      onChanged: (val) {
-                        setState(() {
-                          if (val == true) {
-                            _selectedForGroup.add(p.uid);
-                          } else {
-                            _selectedForGroup.remove(p.uid);
-                          }
-                        });
-                      },
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? dellalioGold.withValues(alpha: 0.08)
+                            : inkSurface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: selected ? dellalioGold : hairline,
+                        ),
+                      ),
+                      child: CheckboxListTile(
+                        value: selected,
+                        activeColor: dellalioGold,
+                        checkColor: inkPageBg,
+                        secondary: _personAvatar(p),
+                        title: Text(p.fullName.isEmpty ? p.uid : p.fullName,
+                            style: TextStyle(color: panelIvory, fontSize: 14)),
+                        subtitle: Text(p.role.toUpperCase(),
+                            style: TextStyle(color: panelSlateDim, fontSize: 11)),
+                        onChanged: (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedForGroup.add(p.uid);
+                            } else {
+                              _selectedForGroup.remove(p.uid);
+                            }
+                          });
+                        },
+                      ),
                     );
                   },
                 ),
         ),
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _createGroupChat,
-              child: const Text("CRIAR GRUPO"),
-            ),
+          child: DellalioGoldButton(
+            label: "Criar grupo",
+            icon: Icons.group_add_outlined,
+            fullWidth: true,
+            onPressed: _createGroupChat,
           ),
         ),
       ],
@@ -243,20 +273,33 @@ class _NewChatScreenState extends State<NewChatScreen>
 
   Widget _buildIndividualTab() {
     if (_loadingPeople) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: dellalioGold));
     }
     if (_people.isEmpty) {
-      return const Center(child: Text("Nenhuma pessoa encontrada."));
+      return const DellalioEmptyState(
+        icon: Icons.person_search_outlined,
+        title: "Nenhuma pessoa encontrada",
+      );
     }
     return ListView.builder(
       itemCount: _people.length,
       itemBuilder: (context, index) {
         final p = _people[index];
-        return ListTile(
-          leading: _personAvatar(p),
-          title: Text(p.fullName.isEmpty ? p.uid : p.fullName),
-          subtitle: Text(p.role.toUpperCase()),
-          onTap: () => _openOrCreateIndividualChat(p),
+        return Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: inkSurface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: hairline),
+          ),
+          child: ListTile(
+            leading: _personAvatar(p),
+            title: Text(p.fullName.isEmpty ? p.uid : p.fullName,
+                style: TextStyle(color: panelIvory, fontSize: 14)),
+            subtitle: Text(p.role.toUpperCase(),
+                style: TextStyle(color: panelSlateDim, fontSize: 11)),
+            onTap: () => _openOrCreateIndividualChat(p),
+          ),
         );
       },
     );

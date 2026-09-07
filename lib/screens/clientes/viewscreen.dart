@@ -3,8 +3,9 @@ import 'package:DELLALIO/screens/clientes/projects/projectsview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/dellalio_kit.dart';
+import '../../core/pdf_cover_card.dart';
 import '../../core/user_session.dart';
 import '../../core/theme.dart';
 
@@ -16,17 +17,21 @@ class ViewClientScreen extends StatelessWidget {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("EXCLUIR CLIENTE"),
-        content: const Text(
-            "Tem certeza que deseja excluir este cliente permanentemente? Esta ação não pode ser desfeita."),
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text("Excluir cliente", style: TextStyle(color: panelIvory)),
+        content: Text(
+          "Tem certeza que deseja excluir este cliente permanentemente? Esta ação não pode ser desfeita.",
+          style: TextStyle(color: panelSlate),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text("CANCELAR")),
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text("Cancelar", style: TextStyle(color: panelSlate)),
+          ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child:
-                const Text("EXCLUIR", style: TextStyle(color: Colors.red)),
+            child: const Text("Excluir", style: TextStyle(color: panelRust)),
           ),
         ],
       ),
@@ -40,8 +45,7 @@ class ViewClientScreen extends StatelessWidget {
         final firestore = FirebaseFirestore.instance;
         final clientRef = firestore.collection('clients').doc(clientId);
 
-        final projectsSnap =
-            await clientRef.collection('projects').get();
+        final projectsSnap = await clientRef.collection('projects').get();
 
         final orcamentosSnap = await firestore
             .collection('orcamentos')
@@ -56,8 +60,9 @@ class ViewClientScreen extends StatelessWidget {
         batch.delete(clientRef);
 
         for (final orcamentoDoc in orcamentosSnap.docs) {
-          final orcamentoProjectsSnap =
-              await orcamentoDoc.reference.collection('projects').get();
+          final orcamentoProjectsSnap = await orcamentoDoc.reference
+              .collection('projects')
+              .get();
           for (final projectDoc in orcamentoProjectsSnap.docs) {
             batch.delete(projectDoc.reference);
           }
@@ -66,21 +71,19 @@ class ViewClientScreen extends StatelessWidget {
 
         await batch.commit();
 
-        messenger.showSnackBar(const SnackBar(
-            content: Text("CLIENTE EXCLUÍDO COM SUCESSO!")));
+        messenger.showSnackBar(
+          const SnackBar(content: Text("Cliente excluído com sucesso!")),
+        );
       } catch (e) {
-        messenger
-            .showSnackBar(SnackBar(content: Text("ERRO AO EXCLUIR: $e")));
+        messenger.showSnackBar(SnackBar(content: Text("Erro ao excluir: $e")));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? Colors.black : const Color(0xFFF0F2F5),
+      backgroundColor: inkPageBg,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('clients')
@@ -88,12 +91,16 @@ class ViewClientScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, clientSnapshot) {
           if (!clientSnapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: dellalioGold),
+            );
           }
 
           final rawData = clientSnapshot.data?.data();
           if (rawData == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: dellalioGold),
+            );
           }
           final data = rawData as Map<String, dynamic>;
 
@@ -106,56 +113,43 @@ class ViewClientScreen extends StatelessWidget {
             builder: (context, projectSnapshot) {
               final projectData =
                   (projectSnapshot.hasData &&
-                          projectSnapshot.data!.docs.isNotEmpty)
-                      ? projectSnapshot.data!.docs.first.data()
-                          as Map<String, dynamic>
-                      : <String, dynamic>{};
+                      projectSnapshot.data!.docs.isNotEmpty)
+                  ? projectSnapshot.data!.docs.first.data()
+                        as Map<String, dynamic>
+                  : <String, dynamic>{};
 
               return DefaultTabController(
                 length: 5,
-                child: NestedScrollView(
-                  headerSliverBuilder:
-                      (context, innerBoxIsScrolled) => [
-                    SliverAppBar(
-                      expandedHeight: 180,
-                      pinned: true,
-                      backgroundColor: petroleoColor,
-                      flexibleSpace: FlexibleSpaceBar(
-                        title: Text(
-                          (data['name'] ?? 'CLIENTE').toUpperCase(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        background: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 20),
-                          child: Image.asset(
-                            'assets/imagens/logo/logo ld.png',
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: Scaffold(
+                  backgroundColor: inkPageBg,
                   body: Column(
                     children: [
+                      DellalioSubHeader(
+                        title: (data['name'] ?? 'Cliente').toString(),
+                      ),
                       Container(
-                        color: petroleoColor,
-                        child: const TabBar(
-                          labelColor: Colors.white,
-                          unselectedLabelColor: Colors.white70,
-                          indicatorColor: Color(0xFFD4AF37),
-                          labelStyle: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 12),
-                          unselectedLabelStyle: TextStyle(
-                              fontWeight: FontWeight.w500, fontSize: 12),
-                          tabs: [
-                            Tab(text: "DETALHES"),
-                            Tab(text: "PROJETOS"),
-                            Tab(text: "FOTOS"),
-                            Tab(text: "PDFS"),
-                            Tab(text: "DOCUMENTOS"),
+                        decoration: BoxDecoration(
+                          border: Border(bottom: BorderSide(color: hairline)),
+                        ),
+                        child: TabBar(
+                          indicatorColor: dellalioGold,
+                          labelColor: panelIvory,
+                          unselectedLabelColor: panelSlate,
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                          ),
+                          isScrollable: true,
+                          tabs: const [
+                            Tab(text: "Detalhes"),
+                            Tab(text: "Projetos"),
+                            Tab(text: "Fotos"),
+                            Tab(text: "PDFs"),
+                            Tab(text: "Documentos"),
                           ],
                         ),
                       ),
@@ -165,29 +159,30 @@ class ViewClientScreen extends StatelessWidget {
                             _buildDetailsTab(context, data, projectData),
                             _buildProjectsGrid(clientId),
                             _buildGalleryTab(projectData['galleryUrls']),
-                            _buildFilesTab(projectData['files']),
+                            _buildFilesTab(context, projectData['files']),
                             _buildDocumentsTab(projectData['contratos']),
                           ],
                         ),
                       ),
                     ],
                   ),
+                  floatingActionButton: FloatingActionButton(
+                    backgroundColor: dellalioGold,
+                    foregroundColor: inkPageBg,
+                    child: const Icon(Icons.add),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              CreateProjectScreen(clientId: clientId),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               );
             },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: petroleoColor,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  CreateProjectScreen(clientId: clientId),
-            ),
           );
         },
       ),
@@ -203,20 +198,22 @@ class ViewClientScreen extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: CircularProgressIndicator(color: dellalioGold),
+          );
         }
 
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) {
-          return const Center(
-              child: Text("NENHUM PROJETO REGISTRADO",
-                  style: TextStyle(fontWeight: FontWeight.w500)));
+          return const DellalioEmptyState(
+            icon: Icons.folder_open,
+            title: "Nenhum projeto registrado",
+          );
         }
 
         return GridView.builder(
           padding: const EdgeInsets.all(16),
-          gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             childAspectRatio: 1.5,
             crossAxisSpacing: 16,
@@ -224,17 +221,16 @@ class ViewClientScreen extends StatelessWidget {
           ),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            final pData =
-                docs[index].data() as Map<String, dynamic>;
-            final String corHex =
-                pData['corProjeto']?.toString() ?? '#00695C';
+            final pData = docs[index].data() as Map<String, dynamic>;
+            final String corHex = pData['corProjeto']?.toString() ?? '#00695C';
             final Color cardColor = DellalioTheme.colorFromHex(corHex);
 
             return Card(
               color: cardColor,
               elevation: 4,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () {
@@ -252,8 +248,7 @@ class ViewClientScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Text(
-                      (pData['projectName'] ?? 'PROJETO')
-                          .toUpperCase(),
+                      (pData['projectName'] ?? 'Projeto').toString(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -272,89 +267,41 @@ class ViewClientScreen extends StatelessWidget {
   }
 
   Widget _buildDocumentsTab(List<dynamic>? documentos) {
-    if (documentos == null || documentos.isEmpty) {
-      return const Center(child: Text("NENHUM DOCUMENTO ANEXADO"));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: documentos.length,
-      itemBuilder: (ctx, i) {
-        final doc = documentos[i];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            leading:
-                const Icon(Icons.description, color: Colors.black),
-            title: Text(
-                ((doc as Map)['name'] ?? 'DOCUMENTO SEM NOME')
-                    .toString()
-                    .toUpperCase()),
-            trailing: const Icon(Icons.visibility),
-            onTap: () {
-              if (doc['url'] != null) {
-                launchUrl(Uri.parse(doc['url']),
-                    mode: LaunchMode.externalApplication);
-              }
-            },
-          ),
-        );
-      },
+    return PdfCoverGrid(
+      items: documentos,
+      emptyTitle: "Nenhum documento anexado",
     );
   }
 
-  Widget _buildDetailsTab(BuildContext context, Map<String, dynamic> data,
-      Map<String, dynamic> projectData) {
-    String formattedDate = '--/--';
-    if (projectData.containsKey('deliveryDate') &&
-        projectData['deliveryDate'] != null) {
-      final dynamic deliveryValue = projectData['deliveryDate'];
-      if (deliveryValue is Timestamp) {
-        DateTime date = deliveryValue.toDate();
-        formattedDate =
-            "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
-      } else {
-        formattedDate = deliveryValue.toString();
-      }
-    }
-
+  Widget _buildDetailsTab(
+    BuildContext context,
+    Map<String, dynamic> data,
+    Map<String, dynamic> projectData,
+  ) {
     final String rawPhone = data['phone'] ?? '';
     final String formattedPhone = rawPhone.isNotEmpty
         ? MaskTextInputFormatter(
-                mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')})
-            .maskText(rawPhone)
+            mask: '(##) #####-####',
+            filter: {"#": RegExp(r'[0-9]')},
+          ).maskText(rawPhone)
         : '---';
 
     final String rawDoc = data['document'] ?? '';
     final String formattedDoc = rawDoc.isNotEmpty
         ? MaskTextInputFormatter(
-                mask: rawDoc.length > 11
-                    ? '##.###.###/####-##'
-                    : '###.###.###-##',
-                filter: {"#": RegExp(r'[0-9]')})
-            .maskText(rawDoc)
+            mask: rawDoc.length > 11 ? '##.###.###/####-##' : '###.###.###-##',
+            filter: {"#": RegExp(r'[0-9]')},
+          ).maskText(rawDoc)
         : '---';
 
     final List<Map<String, dynamic>> items = [
+      {"label": "CPF / CNPJ", "value": formattedDoc, "icon": Icons.badge},
+      {"label": "Telefone", "value": formattedPhone, "icon": Icons.phone},
+      {"label": "E-mail", "value": data['email'] ?? '---', "icon": Icons.email},
       {
-        "label": "CPF / CNPJ",
-        "value": formattedDoc,
-        "icon": Icons.badge
-      },
-      {
-        "label": "TELEFONE",
-        "value": formattedPhone,
-        "icon": Icons.phone
-      },
-      {
-        "label": "E-MAIL",
-        "value": data['email'] ?? '---',
-        "icon": Icons.email
-      },
-      {
-        "label": "ENDEREÇO",
-        "value": data['address'] ?? 'NÃO INFORMADO',
-        "icon": Icons.home
+        "label": "Endereço",
+        "value": data['address'] ?? 'Não informado',
+        "icon": Icons.home,
       },
     ];
 
@@ -365,17 +312,19 @@ class ViewClientScreen extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           children: [
             const SizedBox(height: 10),
-            const Text("INFORMAÇÕES",
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: petroleoColor)),
+            Text(
+              "Informações",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: panelSlate,
+              ),
+            ),
             const SizedBox(height: 12),
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 6,
                 crossAxisSpacing: 20,
@@ -384,45 +333,47 @@ class ViewClientScreen extends StatelessWidget {
               ),
               itemCount: items.length,
               itemBuilder: (context, index) {
-                return _infoCard(items[index]['label'],
-                    items[index]['value'], items[index]['icon']);
+                return _infoCard(
+                  items[index]['label'],
+                  items[index]['value'],
+                  items[index]['icon'],
+                );
               },
             ),
             const SizedBox(height: 20),
-            const Text("OBSERVAÇÕES",
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: petroleoColor)),
+            Text(
+              "Observações",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: panelSlate,
+              ),
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                // color: Colors.black,
+                color: inkSurface,
                 borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: hairline),
               ),
               child: Text(
-                data['notes'] ?? 'NENHUMA OBSERVAÇÃO.',
-                style: const TextStyle(fontSize: 15),
+                data['notes'] ?? 'Nenhuma observação.',
+                style: TextStyle(fontSize: 14, color: panelIvory),
               ),
             ),
             const SizedBox(height: 40),
             if (UserSession.isAdmin())
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: ElevatedButton.icon(
                   onPressed: () => _deleteClient(context),
-                  icon: const Icon(Icons.delete_forever,
-                      color: Colors.white),
-                  label: const Text("EXCLUIR CLIENTE"),
+                  icon: const Icon(Icons.delete_forever, color: Colors.white),
+                  label: const Text("Excluir cliente"),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: panelRust,
                     foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                 ),
               ),
@@ -437,34 +388,37 @@ class ViewClientScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        // color: Colors.black54,
+        color: inkSurface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: petroleoColor),
+          Icon(icon, color: dellalioGold),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label,
-                    style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: petroleoColor)),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 13, color: panelSlateDim),
+                ),
                 const SizedBox(height: 4),
-                Text(value,
-                    style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold),
-                    softWrap: true),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: panelIvory,
+                  ),
+                  softWrap: true,
+                ),
               ],
             ),
-          )
+          ),
         ],
       ),
     );
@@ -472,12 +426,14 @@ class ViewClientScreen extends StatelessWidget {
 
   Widget _buildGalleryTab(List<dynamic>? urls) {
     if (urls == null || urls.isEmpty) {
-      return const Center(child: Text("NENHUMA IMAGEM"));
+      return const DellalioEmptyState(
+        icon: Icons.photo_outlined,
+        title: "Nenhuma imagem",
+      );
     }
     return GridView.builder(
       padding: const EdgeInsets.all(20),
-      gridDelegate:
-          const SliverGridDelegateWithMaxCrossAxisExtent(
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
         crossAxisSpacing: 15,
         mainAxisSpacing: 15,
@@ -485,46 +441,23 @@ class ViewClientScreen extends StatelessWidget {
       itemCount: urls.length,
       itemBuilder: (ctx, i) => InkWell(
         onTap: () => showDialog(
-            context: ctx,
-            builder: (_) => Dialog(
-                child: CachedNetworkImage(imageUrl: urls[i]))),
+          context: ctx,
+          builder: (_) => Dialog(child: CachedNetworkImage(imageUrl: urls[i])),
+        ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: CachedNetworkImage(
             imageUrl: urls[i],
             fit: BoxFit.cover,
-            placeholder: (context, url) =>
-                Container(color: Colors.grey[300]),
-            errorWidget: (context, url, error) =>
-                const Icon(Icons.error),
+            placeholder: (context, url) => Container(color: inkSurface),
+            errorWidget: (context, url, error) => const Icon(Icons.error),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFilesTab(List<dynamic>? files) {
-    if (files == null || files.isEmpty) {
-      return const Center(child: Text("NENHUM ARQUIVO"));
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: files.length,
-      itemBuilder: (ctx, i) => Card(
-        margin: const EdgeInsets.only(bottom: 10),
-        child: ListTile(
-          leading: const Icon(Icons.picture_as_pdf,
-              color: Colors.red),
-          title: Text(
-              ((files[i] as Map)['name'] ?? 'ARQUIVO')
-                  .toString()
-                  .toUpperCase()),
-          trailing: const Icon(Icons.open_in_new),
-          onTap: () => launchUrl(
-              Uri.parse(files[i]['url']),
-              mode: LaunchMode.externalApplication),
-        ),
-      ),
-    );
+  Widget _buildFilesTab(BuildContext context, List<dynamic>? files) {
+    return PdfCoverGrid(items: files, emptyTitle: "Nenhum arquivo");
   }
 }

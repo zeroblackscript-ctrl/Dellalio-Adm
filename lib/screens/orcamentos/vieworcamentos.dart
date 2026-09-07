@@ -4,6 +4,7 @@ import 'package:DELLALIO/screens/orcamentos/rascunhos.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../core/dellalio_kit.dart';
 import '../../core/theme.dart';
 
 class ViewBudgetScreen extends StatelessWidget {
@@ -13,132 +14,101 @@ class ViewBudgetScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
-
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: inkPageBg,
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('orcamentos').doc(orcamentoId).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: dellalioGold));
+          }
 
           final rawData = snapshot.data?.data();
           if (rawData == null) {
-            return Scaffold(
-              backgroundColor: bgColor,
-              body: const Center(child: CircularProgressIndicator()),
-            );
+            return const Center(child: CircularProgressIndicator(color: dellalioGold));
           }
           final data = rawData as Map<String, dynamic>;
 
-          return Scaffold(
-            backgroundColor: bgColor,
-            body: DefaultTabController(
-              length: 2,
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverAppBar(
-                    expandedHeight: 180,
-                    pinned: true,
-                    backgroundColor: petroleoColor,
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.delete_forever, color: Colors.white),
-                        tooltip: "EXCLUIR ORÇAMENTO",
-                        onPressed: () => _showDeleteOrcamentoDialog(context, orcamentoId),
-                      ),
-                    ],
-                    flexibleSpace: FlexibleSpaceBar(
-                      title: Text((data['name'] ?? 'ORÇAMENTO').toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                      background: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 20),
-                        child: Image.asset('assets/imagens/logo/logo ld.png', fit: BoxFit.contain),
-                      ),
+          return DefaultTabController(
+            length: 2,
+            child: Scaffold(
+              backgroundColor: inkPageBg,
+              body: Column(
+                children: [
+                  DellalioSubHeader(
+                    title: (data['name'] ?? 'Orçamento').toString(),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_forever, color: panelRust),
+                      tooltip: "Excluir orçamento",
+                      onPressed: () => _showDeleteOrcamentoDialog(context, orcamentoId),
+                    ),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(bottom: BorderSide(color: hairline)),
+                    ),
+                    child: TabBar(
+                      indicatorColor: dellalioGold,
+                      labelColor: panelIvory,
+                      unselectedLabelColor: panelSlate,
+                      labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      tabs: const [Tab(text: "Detalhes"), Tab(text: "Projetos")],
+                    ),
+                  ),
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        _buildDetailsTab(data),
+                        _buildProjectsTab(),
+                      ],
                     ),
                   ),
                 ],
-                body: Column(
-                  children: [
-                    Container(
-                      color: petroleoColor,
-                      child: const TabBar(
-                        labelColor: Colors.white,
-                        unselectedLabelColor: Colors.white70,
-                        indicatorColor: Color(0xFFD4AF37),
-                        labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                        tabs: [Tab(text: "DETALHES"), Tab(text: "PROJETOS/RASCUNHOS")],
-                      ),
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          _buildDetailsTab(data, isDark),
-                          StreamBuilder<QuerySnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('orcamentos')
-                                .doc(orcamentoId)
-                                .collection('projects')
-                                .snapshots(),
-                            builder: (context, projectSnapshot) {
-                              if (!projectSnapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-                              final listaProjetos = projectSnapshot.data!.docs
-                                  .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
-                                  .toList();
-
-                              return _buildProjectsGrid(listaProjetos, isDark);
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
               ),
-            ),
-            bottomNavigationBar: BottomNavigationBar(
-              type: BottomNavigationBarType.fixed,
-              unselectedItemColor: Colors.white70,
-              backgroundColor: isDark ? const Color(0xFF0D0D0D) : petroleoColor,
-              selectedItemColor: Colors.white,
-              onTap: (index) {
-                if (index == 0) {
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ConfigurarAmbienteScreen(orcamentoId: orcamentoId)
-                  ));
-                } else if (index == 1) {
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => ListarRascunhosScreen(orcamentoId: orcamentoId)));
-                } else if (index == 2) {
-                  _showFinalizarDialog(context, orcamentoId, data);
-                }
-              },
-              items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.add_business), label: "Novo Projeto"),
-                BottomNavigationBarItem(icon: Icon(Icons.picture_as_pdf), label: "Gerar PDF"),
-                BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Finalizar"),
-              ],
+              bottomNavigationBar: BottomNavigationBar(
+                type: BottomNavigationBarType.fixed,
+                unselectedItemColor: panelSlate,
+                backgroundColor: inkSurface,
+                selectedItemColor: dellalioGold,
+                onTap: (index) {
+                  if (index == 0) {
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ConfigurarAmbienteScreen(orcamentoId: orcamentoId)
+                    ));
+                  } else if (index == 1) {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => ListarRascunhosScreen(orcamentoId: orcamentoId)));
+                  } else if (index == 2) {
+                    _showFinalizarDialog(context, orcamentoId, data);
+                  }
+                },
+                items: const [
+                  BottomNavigationBarItem(icon: Icon(Icons.add_business), label: "Novo projeto"),
+                  BottomNavigationBarItem(icon: Icon(Icons.picture_as_pdf), label: "Gerar PDF"),
+                  BottomNavigationBarItem(icon: Icon(Icons.check_circle), label: "Finalizar"),
+                ],
+              ),
             ),
           );
         },
       ),
     );
   }
-
   void _showDeleteOrcamentoDialog(BuildContext context, String id) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("EXCLUIR ORÇAMENTO"),
-        content: const Text(
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text("Excluir orçamento", style: TextStyle(color: panelIvory)),
+        content: Text(
           "Tem certeza que deseja excluir este orçamento? Todos os projetos vinculados a ele também serão removidos permanentemente. Esta ação não pode ser desfeita.",
+          style: TextStyle(color: panelSlate),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCELAR")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancelar", style: TextStyle(color: panelSlate))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: panelRust, foregroundColor: Colors.white),
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
@@ -159,18 +129,18 @@ class ViewBudgetScreen extends StatelessWidget {
 
                 messenger.showSnackBar(
                   const SnackBar(
-                    content: Text("ORÇAMENTO EXCLUÍDO COM SUCESSO!"),
+                    content: Text("Orçamento excluído com sucesso!"),
                     backgroundColor: Colors.green,
                   ),
                 );
               } catch (e) {
                 debugPrint("Erro ao excluir orçamento: $e");
                 messenger.showSnackBar(
-                  SnackBar(content: Text("ERRO AO EXCLUIR: $e"), backgroundColor: Colors.red),
+                  SnackBar(content: Text("Erro ao excluir: $e"), backgroundColor: Colors.red),
                 );
               }
             },
-            child: const Text("SIM, EXCLUIR"),
+            child: const Text("Excluir"),
           ),
         ],
       ),
@@ -181,25 +151,22 @@ class ViewBudgetScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("FINALIZAR ORÇAMENTO"),
-        content: const Text("Converter orçamento em cliente ativo e migrar todos os projetos com suas especificações?"),
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text("Finalizar orçamento", style: TextStyle(color: panelIvory)),
+        content: Text("Converter orçamento em cliente ativo e migrar todos os projetos com suas especificações?", style: TextStyle(color: panelSlate)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("CANCELAR")),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text("Cancelar", style: TextStyle(color: panelSlate))),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: petroleoColor, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: dellalioGold, foregroundColor: inkPageBg),
             onPressed: () async { /* ... lógica mantida ... */ Navigator.pop(ctx); },
-            child: const Text("CONFIRMAR"),
+            child: const Text("Confirmar"),
           ),
         ],
       ),
     );
   }
-
-  Widget _buildDetailsTab(Map<String, dynamic> data, bool isDark) {
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final cardBg = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-    final iconColor = petroleoColor;
-
+  Widget _buildDetailsTab(Map<String, dynamic> data) {
     final String rawPhone = data['phone'] ?? '';
     final String formattedPhone = rawPhone.isNotEmpty
         ? MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')}).maskText(rawPhone)
@@ -213,12 +180,12 @@ class ViewBudgetScreen extends StatelessWidget {
         : '---';
 
     final List<Map<String, dynamic>> items = [
-      {"label": "NOME", "value": data['name']?.toString().toUpperCase() ?? '---', "icon": Icons.person},
+      {"label": "Nome", "value": data['name']?.toString() ?? '---', "icon": Icons.person},
       {"label": "CPF / CNPJ", "value": formattedDoc, "icon": Icons.badge},
-      {"label": "TELEFONE", "value": formattedPhone, "icon": Icons.phone},
-      {"label": "E-MAIL", "value": data['email'] ?? '---', "icon": Icons.email},
-      {"label": "ENDEREÇO", "value": data['address'] ?? 'NÃO INFORMADO', "icon": Icons.home},
-      {"label": "OBSERVAÇÕES", "value": data['notes'] ?? 'NENHUMA', "icon": Icons.notes},
+      {"label": "Telefone", "value": formattedPhone, "icon": Icons.phone},
+      {"label": "E-mail", "value": data['email'] ?? '---', "icon": Icons.email},
+      {"label": "Endereço", "value": data['address'] ?? 'Não informado', "icon": Icons.home},
+      {"label": "Observações", "value": data['notes'] ?? 'Nenhuma', "icon": Icons.notes},
     ];
 
     return Center(
@@ -227,8 +194,8 @@ class ViewBudgetScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
-            const Text("DADOS DO ORÇAMENTO",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: petroleoColor)),
+            Text("Dados do orçamento",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: panelSlate)),
             const SizedBox(height: 12),
             GridView.builder(
               shrinkWrap: true,
@@ -242,7 +209,7 @@ class ViewBudgetScreen extends StatelessWidget {
               ),
               itemCount: items.length,
               itemBuilder: (context, index) {
-                return _infoCard(items[index]['label'], items[index]['value'], items[index]['icon'], cardBg, textColor, iconColor);
+                return _infoCard(items[index]['label'], items[index]['value'], items[index]['icon']);
               },
             ),
           ],
@@ -251,27 +218,27 @@ class ViewBudgetScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoCard(String label, String value, IconData icon, Color cardBg, Color textColor, Color iconColor) {
+  Widget _infoCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: inkSurface,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: hairline),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: iconColor),
+          Icon(icon, color: dellalioGold),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(label, style: TextStyle(fontSize: 14, color: textColor.withValues(alpha: 0.6))),
+                Text(label, style: TextStyle(fontSize: 13, color: panelSlateDim)),
                 const SizedBox(height: 4),
-                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor), softWrap: true),
+                Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: panelIvory), softWrap: true),
               ],
             ),
           )
@@ -280,11 +247,32 @@ class ViewBudgetScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProjectsGrid(List<Map<String, dynamic>> projetos, bool isDark) {
+  Widget _buildProjectsTab() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('orcamentos')
+          .doc(orcamentoId)
+          .collection('projects')
+          .snapshots(),
+      builder: (context, projectSnapshot) {
+        if (!projectSnapshot.hasData) {
+          return const Center(child: CircularProgressIndicator(color: dellalioGold));
+        }
+
+        final listaProjetos = projectSnapshot.data!.docs
+            .map((doc) => {'id': doc.id, ...doc.data() as Map<String, dynamic>})
+            .toList();
+
+        return _buildProjectsGrid(listaProjetos);
+      },
+    );
+  }
+
+  Widget _buildProjectsGrid(List<Map<String, dynamic>> projetos) {
     if (projetos.isEmpty) {
-      return Center(
-        child: Text("NENHUM PROJETO CADASTRADO",
-            style: TextStyle(color: isDark ? Colors.white70 : Colors.black54)),
+      return const DellalioEmptyState(
+        icon: Icons.folder_open,
+        title: "Nenhum projeto cadastrado",
       );
     }
 
@@ -298,7 +286,6 @@ class ViewBudgetScreen extends StatelessWidget {
         final pData = projetos[index];
         final String corHex = pData['corProjeto']?.toString() ?? '#00695C';
         final Color cardColor = DellalioTheme.colorFromHex(corHex);
-        final String projectId = pData['id']?.toString() ?? '';
 
         return Card(
           color: cardColor,
@@ -317,8 +304,8 @@ class ViewBudgetScreen extends StatelessWidget {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-child: Text(
-                  (pData['nome'] ?? pData['projectName'] ?? 'AMBIENTE').toUpperCase(),
+                child: Text(
+                  (pData['nome'] ?? pData['projectName'] ?? 'AMBIENTE').toString(),
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
                 ),

@@ -1,9 +1,80 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Azul petróleo — cor primária do app Dellalio.
-const Color petroleoColor = Color.fromARGB(255, 0, 23, 88);
-const Color petroleoDarkColor = Color.fromARGB(255, 0, 10, 39);
-const Color petroleoLightColor = Color.fromARGB(255, 0, 23, 88);
+import 'user_session.dart';
+
+/// Azul-noite Dellalio — cor primária do app (igual nos dois modos).
+const Color petroleoColor = Color(0xFF0C1A30);
+const Color petroleoDarkColor = Color(0xFF070F1F);
+const Color petroleoLightColor = Color(0xFF122240);
+
+/// Dourado de destaque (usar com moderação: ações e estados ativos) —
+/// igual nos dois modos, é a cor de assinatura da marca.
+const Color dellalioGold = Color(0xFFC9A227);
+
+/// ============================================================
+/// TOKENS DO REDESIGN — agora sensíveis ao modo claro/escuro.
+/// Mesmos nomes de antes (drop-in), mas cada um é um getter que
+/// escolhe o valor certo com base em `UserSession.isDarkMode()`.
+/// Isso significa que deixam de ser `const` — em qualquer lugar
+/// que use um destes tokens dentro de uma expressão `const`,
+/// remova o `const` daquele ponto (o flutter analyze aponta todos).
+/// ============================================================
+bool get _dark => UserSession.isDarkMode();
+
+Color get dellalioGoldSoft =>
+    _dark ? const Color(0xFFE4C766) : const Color(0xFFA6841E);
+
+Color get inkPageBg =>
+    _dark ? const Color(0xFF0B0B0C) : const Color(0xFFF6F3EC);
+Color get inkSurface =>
+    _dark ? const Color(0xFF1B1A1D) : const Color(0xFFFFFFFF);
+Color get inkSurfaceHover =>
+    _dark ? const Color(0xFF242327) : const Color(0xFFEEF0F4);
+
+Color get hairline =>
+    _dark ? const Color(0x12FFFFFF) : petroleoColor.withValues(alpha: 0.12);
+Color get hairlineNavy =>
+    _dark ? const Color(0x484A638C) : petroleoColor.withValues(alpha: 0.28);
+
+/// Azul-petróleo usado em texto/ícone/borda (nunca em fundo grande).
+/// No modo escuro é um steel-blue mais claro pra legibilidade; no modo
+/// claro é a própria cor principal da marca.
+Color get navyAccent => _dark ? const Color(0xFF4A6B99) : petroleoColor;
+
+Color get panelIvory =>
+    _dark ? const Color(0xFFF3EFE6) : const Color(0xFF1C1F26);
+Color get panelSlate =>
+    _dark ? const Color(0xFF7C8698) : const Color(0xFF5C6470);
+Color get panelSlateDim =>
+    _dark ? const Color(0xFF545B68) : const Color(0xFF8A93A0);
+
+/// Cor de títulos de página e de seção. No modo escuro é o quase-branco de
+/// sempre; no modo claro passa a ser o azul-marinho da marca, pra trazer a
+/// cor principal de volta ao conteúdo (em detalhes: título, rótulo, linha).
+Color get dellalioTitle => _dark ? const Color(0xFFF3EFE6) : petroleoColor;
+
+/// Rótulo de seção / subtítulo. Escuro: cinza-azulado. Claro: azul-marinho
+/// suave, pra marcar os detalhes com a cor da marca sem pesar.
+Color get dellalioLabel =>
+    _dark ? const Color(0xFF7C8698) : const Color(0xFF3A4A6B);
+
+const Color panelRust = Color(0xFFC0553B);
+const Color panelSage = Color(0xFF5C8862);
+
+/// Cores do pipeline de status do cliente (Clientes) — mantém as 6 etapas
+/// já usadas no app, só trocando os tons crus do Material pelos da marca.
+/// (Iguais nos dois modos: são "tags" e precisam ficar reconhecíveis.)
+Color get statusPedido => navyAccent;
+const Color statusConferencia = Color(0xFF8D79C4);
+const Color statusProducao = dellalioGold;
+const Color statusMontagem = Color(0xFFC9863A);
+const Color statusEntrega = panelSage;
+const Color statusFinalizado = Color(0xFF9B4F63);
+
+/// Alias genérico do violeta acima, pra usar fora do contexto de pipeline
+/// de cliente (ex: badge "todos" em Tarefas).
+const Color panelViolet = statusConferencia;
 
 /// Singleton que notifica os ouvintes quando o tema é alternado.
 class ThemeNotifier extends ChangeNotifier {
@@ -28,20 +99,17 @@ class ThemeNotifier extends ChangeNotifier {
 }
 
 class DellalioTheme {
-  // Core color palette
   static const Color darkBackground = Color(0xFF000000);
   static const Color darkSurface = Color(0xFF0D0D0D);
   static const Color darkPrimary = Color(0xFF1A1A1A);
-  static const Color accentGold = Color(0xFFD4AF37);
+  static const Color accentGold = dellalioGold;
   static const Color accentBlue = Color(0xFF4A90E2);
   static const Color textSecondary = Color(0xFFB0BEC5);
   static const Color textOnDark = Color(0xFFE0E0E0);
 
-  // Light palette
   static const Color lightBackground = Color(0xFFF0F2F5);
   static const Color lightSurface = Color(0xFFFFFFFF);
 
-  // Mantido por compatibilidade com telas que ainda referenciam
   static const TextStyle titleStyle = TextStyle(
     color: Colors.white,
     fontSize: 18,
@@ -53,6 +121,17 @@ class DellalioTheme {
     return ThemeData.dark().copyWith(
       scaffoldBackgroundColor: darkBackground,
       primaryColor: petroleoColor,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme)
+          .copyWith(
+            headlineMedium: GoogleFonts.fraunces(
+              fontWeight: FontWeight.w500,
+              fontSize: 26,
+            ),
+            headlineSmall: GoogleFonts.fraunces(
+              fontWeight: FontWeight.w500,
+              fontSize: 20,
+            ),
+          ),
       colorScheme: const ColorScheme.dark(
         primary: petroleoColor,
         secondary: accentGold,
@@ -69,7 +148,10 @@ class DellalioTheme {
         unselectedLabelColor: Colors.white70,
         indicatorColor: accentGold,
         labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -105,9 +187,19 @@ class DellalioTheme {
 
   static ThemeData get lightTheme {
     return ThemeData.light().copyWith(
-      useMaterial3: false,
       scaffoldBackgroundColor: lightBackground,
       primaryColor: petroleoColor,
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme)
+          .copyWith(
+            headlineMedium: GoogleFonts.fraunces(
+              fontWeight: FontWeight.w500,
+              fontSize: 26,
+            ),
+            headlineSmall: GoogleFonts.fraunces(
+              fontWeight: FontWeight.w500,
+              fontSize: 20,
+            ),
+          ),
       colorScheme: const ColorScheme.light(
         primary: petroleoColor,
         onPrimary: Colors.white,
@@ -116,10 +208,6 @@ class DellalioTheme {
         surface: lightSurface,
         onSurface: Colors.black87,
         onSurfaceVariant: Colors.black54,
-      ),
-      textTheme: Typography.material2018().black.apply(
-        bodyColor: Colors.black87,
-        displayColor: Colors.black87,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: petroleoColor,
@@ -132,12 +220,18 @@ class DellalioTheme {
         unselectedLabelColor: Colors.white70,
         indicatorColor: accentGold,
         labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        unselectedLabelStyle: TextStyle(
+          fontWeight: FontWeight.w500,
+          fontSize: 13,
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         labelStyle: const TextStyle(
           color: petroleoColor,
           fontWeight: FontWeight.w600,
@@ -178,7 +272,6 @@ class DellalioTheme {
     );
   }
 
-  /// Cores disponíveis para projetos (seletor de cor).
   static const List<Map<String, dynamic>> projectColors = [
     {'label': 'AZUL PETRÓLEO', 'color': petroleoColor, 'hex': '#00695C'},
     {'label': 'DOURADO', 'color': accentGold, 'hex': '#D4AF37'},
@@ -192,7 +285,6 @@ class DellalioTheme {
     {'label': 'MARROM', 'color': Color(0xFF6D4C41), 'hex': '#6D4C41'},
   ];
 
-  /// Retorna a cor a partir do hex, ou a cor padrão (petróleo).
   static Color colorFromHex(String? hex) {
     if (hex == null || hex.isEmpty) return petroleoColor;
     try {

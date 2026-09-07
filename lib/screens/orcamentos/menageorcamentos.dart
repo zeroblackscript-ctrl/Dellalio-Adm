@@ -1,221 +1,297 @@
 import 'package:DELLALIO/screens/orcamentos/criarorcamento.dart';
 import 'package:DELLALIO/screens/orcamentos/editorcamento.dart';
 import 'package:DELLALIO/screens/orcamentos/vieworcamentos.dart';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../../core/dellalio_kit.dart';
 import '../../core/theme.dart';
 
 class ManageOrcamentosListScreen extends StatefulWidget {
   const ManageOrcamentosListScreen({super.key});
 
   @override
-  State<ManageOrcamentosListScreen> createState() => _ManageOrcamentosListScreenState();
+  State<ManageOrcamentosListScreen> createState() =>
+      _ManageOrcamentosListScreenState();
 }
 
-class _ManageOrcamentosListScreenState extends State<ManageOrcamentosListScreen> {
+class _ManageOrcamentosListScreenState
+    extends State<ManageOrcamentosListScreen> {
   String _searchQuery = "";
 
   void _showSelectClientDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text("Selecione o Cliente"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('clients').snapshots(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-              
-              final clients = snapshot.data!.docs;
-              
-              return ListView.builder(
-                itemCount: clients.length,
-                itemBuilder: (context, index) {
-                  final clientData = clients[index].data() as Map<String, dynamic>;
-                  final clientId = clients[index].id;
-                  
-                  return ListTile(
-                    title: Text(clientData['name'] ?? 'Sem nome'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.pop(context); // Fecha o diálogo
-                      // Navega para a tela de criação passando o clientId
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CreateFullClientAndBudgetScreen(preselectedClientId: clientId),
-                        ),
-                      );
-                    },
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: inkSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          title: Text(
+            "Selecione o cliente",
+            style: TextStyle(
+              color: panelIvory,
+              fontWeight: FontWeight.w500,
+              fontSize: 17,
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('clients')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: dellalioGold),
                   );
-                },
-              );
-            },
+                }
+
+                final clients = snapshot.data!.docs;
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: clients.length,
+                  itemBuilder: (context, index) {
+                    final clientData =
+                        clients[index].data() as Map<String, dynamic>;
+                    final clientId = clients[index].id;
+
+                    return ListTile(
+                      title: Text(
+                        clientData['name'] ?? 'Sem nome',
+                        style: TextStyle(color: panelIvory, fontSize: 14),
+                      ),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: panelSlate,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CreateFullClientAndBudgetScreen(
+                              preselectedClientId: clientId,
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
-
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
-    return Container(
-      color: bgColor,
-      child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  decoration: const InputDecoration(
-                    labelText: "Buscar orçamento",
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                  ),
-                  onChanged: (value) => setState(() => _searchQuery = value.toLowerCase()),
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent, 
-                  fixedSize: const Size(160, 50),
-                  foregroundColor: Colors.white
-                ),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateFullClientAndBudgetScreen())),
-                child: const Text('Novo Orçamento', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-
-              SizedBox(
-                width: 30,
-              ),
-
-              ElevatedButton(
-  style: ElevatedButton.styleFrom(
-    backgroundColor: Colors.green, 
-    fixedSize: const Size(180, 50),
-    foregroundColor: Colors.white
-  ),
-  onPressed: () => _showSelectClientDialog(context),
-  child: const Text('Projeto p/ Cliente\nExistente', 
-      textAlign: TextAlign.center, 
-      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-),
-            ],
-          ),
-        ),
-        Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('orcamentos').snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(child: Text("Nenhum orçamento encontrado."));
-              }
-              
-              var docs = snapshot.data!.docs.where((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                return data['name']?.toString().toLowerCase().contains(_searchQuery) ?? false;
-              }).toList();
-
-              return GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, childAspectRatio: 1.5, crossAxisSpacing: 16, mainAxisSpacing: 16,
-                ),
-                itemCount: docs.length,
-                itemBuilder: (context, index) => _buildOrcamentoCard(context, docs[index]),
-              );
-            },
-          ),
-        ),
-      ],
-      ),
+        );
+      },
     );
   }
 
-  
-Widget _buildOrcamentoCard(BuildContext context, DocumentSnapshot doc) {
-  final data = doc.data() as Map<String, dynamic>;
-  final isDark = Theme.of(context).brightness == Brightness.dark;
-  final cardColor = isDark ? const Color(0xFF0D0D0D) : Colors.white;
-  final textColor = isDark ? Colors.white : Colors.black87;
-  
-  return Card(
-    elevation: 4,
-    color: cardColor,
-    child: InkWell(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ViewBudgetScreen(orcamentoId: doc.id)),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: inkPageBg,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(34, 30, 34, 30),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: DellalioSearchField(
+                    hint: "Buscar orçamento",
+                    onChanged: (value) =>
+                        setState(() => _searchQuery = value.toLowerCase()),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                DellalioGhostButton(
+                  label: "Projeto p/ cliente existente",
+                  icon: Icons.move_to_inbox_outlined,
+                  onPressed: () => _showSelectClientDialog(context),
+                ),
+                const SizedBox(width: 10),
+                DellalioGoldButton(
+                  label: "Novo orçamento",
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const CreateFullClientAndBudgetScreen(),
+                    ),
+                  ),
+                ),
+              ],
+            ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0),
+            const SizedBox(height: 26),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('orcamentos')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: CircularProgressIndicator(color: dellalioGold),
+                    ),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      "Nenhum orçamento encontrado.",
+                      style: TextStyle(color: panelSlate),
+                    ),
+                  );
+                }
+
+                var docs = snapshot.data!.docs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  return data['name']?.toString().toLowerCase().contains(
+                        _searchQuery,
+                      ) ??
+                      false;
+                }).toList();
+
+                if (docs.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Text(
+                      "Nenhum orçamento encontrado.",
+                      style: TextStyle(color: panelSlate),
+                    ),
+                  );
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 1.9,
+                    crossAxisSpacing: 18,
+                    mainAxisSpacing: 18,
+                  ),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) =>
+                      _OrcamentoCard(doc: docs[index], delayIndex: index % 12),
+                );
+              },
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(data['name']?.toString().toUpperCase() ?? "SEM NOME",
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: textColor)),
-                      SizedBox(height: 20,),
-                  
-                  // // AQUI BUSCAMOS O NOME DO PROJETO
-                  // StreamBuilder<QuerySnapshot>(
-                  //   stream: doc.reference.collection('projects').limit(1).snapshots(),
-                  //   builder: (context, projSnap) {
-                  //     if (!projSnap.hasData || projSnap.data!.docs.isEmpty) {
-                  //       return const Text("Sem projetos", style: TextStyle(fontSize: 12, color: Colors.grey));
-                  //     }
-                  //     final projData = projSnap.data!.docs.first.data() as Map<String, dynamic>;
-                  //     return Text(
-                  //       "Projeto: ${projData['projectName']
-                  //        ?? 'Sem nome'}",
-                  //       style: const TextStyle(fontSize: 16,fontWeight: FontWeight.bold),
-                  //       overflow: TextOverflow.ellipsis,
-                  //     );
-                  //   },
-                  // ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Botão Editar
-          Container(
-            height: 45,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: petroleoColor,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-            ),
-            child: TextButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => Editorcamento(orcamentoId: doc.id)),
-              ),
-              icon: const Icon(Icons.edit, color: Colors.white, size: 18),
-              label: const Text("EDITAR ORÇAMENTO", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+    );
+  }
 }
 
+class _OrcamentoCard extends StatefulWidget {
+  final DocumentSnapshot doc;
+  final int delayIndex;
+  const _OrcamentoCard({required this.doc, required this.delayIndex});
+
+  @override
+  State<_OrcamentoCard> createState() => _OrcamentoCardState();
+}
+
+class _OrcamentoCardState extends State<_OrcamentoCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.doc.data() as Map<String, dynamic>;
+    final String name = data['name']?.toString().toUpperCase() ?? "SEM NOME";
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child:
+          AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                transform: Matrix4.translationValues(0, _hover ? -4 : 0, 0),
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                decoration: BoxDecoration(
+                  color: _hover ? inkSurfaceHover : inkSurface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: hairline),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ViewBudgetScreen(orcamentoId: widget.doc.id),
+                          ),
+                        ),
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Text(
+                            name,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                              color: panelIvory,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ),
+                    ),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              Editorcamento(orcamentoId: widget.doc.id),
+                        ),
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          border: Border(top: BorderSide(color: hairline)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.edit_outlined,
+                              size: 13,
+                              color: _hover ? dellalioGoldSoft : panelSlate,
+                            ),
+                            SizedBox(width: _hover ? 9 : 6),
+                            Text(
+                              "EDITAR ORÇAMENTO",
+                              style: TextStyle(
+                                fontSize: 11,
+                                letterSpacing: 0.5,
+                                color: _hover ? dellalioGoldSoft : panelSlate,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+              .animate(delay: (50 * widget.delayIndex).ms)
+              .fadeIn(duration: 420.ms, curve: Curves.easeOut)
+              .slideY(begin: 0.08, end: 0, curve: Curves.easeOut),
+    );
+  }
 }

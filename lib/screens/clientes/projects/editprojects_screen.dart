@@ -6,6 +6,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../../core/dellalio_kit.dart';
+import '../../../core/theme.dart';
 
 class EditProjectScreen extends StatefulWidget {
   final String clientId;
@@ -443,9 +445,8 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
           builder: (context, pSnap) {
             if (!cSnap.hasData || !pSnap.hasData || !cSnap.data!.exists || !pSnap.data!.exists) {
               return Scaffold(
-                backgroundColor: const Color.fromARGB(255, 123, 123, 123),
-                appBar: AppBar(backgroundColor: const Color.fromARGB(255, 98, 80, 63)),
-                body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+                backgroundColor: inkPageBg,
+                body: const Center(child: CircularProgressIndicator(color: dellalioGold)),
               );
             }
 
@@ -456,9 +457,8 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
 
             if (!_initialized) {
               return Scaffold(
-                backgroundColor: const Color.fromARGB(255, 123, 123, 123),
-                appBar: AppBar(backgroundColor: const Color.fromARGB(255, 98, 80, 63)),
-                body: const Center(child: CircularProgressIndicator(color: Colors.white)),
+                backgroundColor: inkPageBg,
+                body: const Center(child: CircularProgressIndicator(color: dellalioGold)),
               );
             }
 
@@ -468,37 +468,10 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
 
             return Scaffold(
               key: _scaffoldKey,
-              backgroundColor: const Color.fromARGB(255, 123, 123, 123),
-              appBar: AppBar(
-                title: const Text('EDITAR PROJETO', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-                backgroundColor: const Color.fromARGB(255, 98, 80, 63),
-              ),
-              bottomNavigationBar: SizedBox(
-                height: 60,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                    elevation: 0,
-                  ),
-                  onPressed: _isLoading ? null : _saveAllChanges,
-                  child: const Text('SALVAR ALTERAÇÕES', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-              ),
+              backgroundColor: inkPageBg,
               body: Column(
                 children: [
-                  Container(
-                    width: double.infinity,
-                    height: 140,
-                    decoration: const BoxDecoration(
-                      color: Color.fromARGB(255, 98, 80, 63),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Image.asset('assets/imagens/logo/logo ld.png', fit: BoxFit.contain),
-                    ),
-                  ),
+                  const DellalioSubHeader(title: "Editar projeto"),
                   Expanded(
                     child: ListView(
                       padding: const EdgeInsets.all(20),
@@ -811,6 +784,20 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
                   ),
                 ],
               ),
+              bottomNavigationBar: Container(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: hairline)),
+                ),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: dellalioGold))
+                    : DellalioGoldButton(
+                        label: "Salvar alterações",
+                        icon: Icons.save_outlined,
+                        fullWidth: true,
+                        onPressed: _saveAllChanges,
+                      ),
+              ),
             );
           },
         );
@@ -826,20 +813,20 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
+        color: inkSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: hairline),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: const Color(0xFFD4AF37), size: 20),
+              Icon(icon, color: dellalioGold, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 0.5),
+                style: TextStyle(color: panelIvory, fontWeight: FontWeight.w600, fontSize: 14, letterSpacing: 0.5),
               ),
             ],
           ),
@@ -860,24 +847,15 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
     FocusNode? focusNode,
     Widget? suffixIcon,
   }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8)),
-      child: TextFormField(
-        controller: controller,
-        focusNode: focusNode,
-        inputFormatters: formatters,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black, fontSize: 12),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: suffixIcon,
-        ),
-      ),
+    return DellalioFormField(
+      controller: controller,
+      label: label,
+      inputFormatters: formatters,
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      onChanged: onChanged,
+      focusNode: focusNode,
+      suffixIcon: suffixIcon,
     );
   }
 
@@ -889,16 +867,16 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
 
     return ListTile(
       dense: true,
-      tileColor: Colors.white,
+      tileColor: inkSurface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-      title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      title: Text(label, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: panelSlate)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(formattedDate, style: const TextStyle(fontSize: 12)),
+          Text(formattedDate, style: TextStyle(fontSize: 12, color: panelIvory)),
           const SizedBox(width: 8),
-          const Icon(Icons.calendar_today, size: 16, color: Color.fromARGB(255, 98, 80, 63)),
+          const Icon(Icons.calendar_today, size: 16, color: dellalioGold),
         ],
       ),
       onTap: () async {

@@ -1,6 +1,10 @@
 import 'package:DELLALIO/screens/orcamentos/imprimir_pdf.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+
+import '../../core/dellalio_kit.dart';
+import '../../core/theme.dart';
 
 class ListarRascunhosScreen extends StatefulWidget {
   final String orcamentoId;
@@ -15,33 +19,80 @@ final Map<String, bool> _selecionados = {};
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Selecionar Projetos para PDF")),
-      body: StreamBuilder<QuerySnapshot>(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Selecionar projetos para PDF"),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
   stream: FirebaseFirestore.instance
       .collection('orcamentos')
       .doc(widget.orcamentoId)
       .collection('projects')
       .snapshots(),
-  builder: (context, snapshot) {
-    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-    
-    // Converte os documentos em uma lista de mapas, incluindo o ID do documento
-    final docs = snapshot.data!.docs;
-          return ListView.builder(
-            itemCount: docs.length,
-           itemBuilder: (ctx, i) {
-  final doc = snapshot.data!.docs[i];
-  final data = doc.data() as Map<String, dynamic>;
-  final docId = doc.id; // O ID único do Firebase
-              return CheckboxListTile(
-                title: Text(data['nome'] ?? 'Projeto'),
-                value: _selecionados[docId] ?? false, // Usa o ID aqui
-                onChanged: (v) => setState(() => _selecionados[docId] = v!), // Salva o ID aqui
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: dellalioGold),
+                );
+              }
+
+              final docs = snapshot.data!.docs;
+              if (docs.isEmpty) {
+                return const DellalioEmptyState(
+                  icon: Icons.checklist,
+                  title: "Nenhum projeto para selecionar",
+                  subtitle: "Cadastre um projeto antes de gerar o PDF.",
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
+                itemCount: docs.length,
+                itemBuilder: (ctx, i) {
+                  final doc = docs[i];
+                  final data = doc.data() as Map<String, dynamic>;
+                  final docId = doc.id;
+                  final bool selected = _selecionados[docId] ?? false;
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? dellalioGold.withValues(alpha: 0.08)
+                          : inkSurface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: selected ? dellalioGold : hairline,
+                      ),
+                    ),
+                    child: CheckboxListTile(
+                      value: selected,
+                      activeColor: dellalioGold,
+                      checkColor: inkPageBg,
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 12),
+                      title: Text(
+                        data['nome'] ?? 'Projeto',
+                        style: TextStyle(
+                          color: selected ? dellalioGoldSoft : panelIvory,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onChanged: (v) =>
+                          setState(() => _selecionados[docId] = v!),
+                    ),
+                  ).animate(delay: (50 * (i % 12)).ms)
+                      .fadeIn(duration: 380.ms)
+                      .slideY(begin: 0.08, end: 0);
+                },
               );
             },
-          );
-        },
-      ),
+          ),
+        ),
+      ],
+    ),
       floatingActionButton: FloatingActionButton.extended(
   onPressed: () async {
     // 1. Busca os documentos atuais diretamente da coleção
@@ -78,7 +129,9 @@ final Map<String, bool> _selecionados = {};
       )
     ));
   },
-  label: const Text("Editar e Gerar PDF"),
+  backgroundColor: dellalioGold,
+  foregroundColor: inkPageBg,
+  label: const Text("Gerar PDF", style: TextStyle(fontWeight: FontWeight.w600)),
   icon: const Icon(Icons.edit_note),
 ),
     );

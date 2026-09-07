@@ -4,6 +4,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import '../../core/dellalio_kit.dart';
 import '../../core/theme.dart';
 
 class Editorcamento extends StatefulWidget {
@@ -38,7 +39,6 @@ class _EditorcamentoState extends State<Editorcamento> {
   );
   DateTime? _deliveryDate;
   DateTime? _deliveryCreate;
-  bool _isLoading = false;
   bool _initialized = false;
 
   Future<void> _fetchClientDetails(String clientId) async {
@@ -69,7 +69,6 @@ class _EditorcamentoState extends State<Editorcamento> {
 
     if (result == null || result.files.first.bytes == null) return;
 
-    setState(() => _isLoading = true);
     try {
       final fileName = result.files.first.name;
       final bytes = result.files.first.bytes!;
@@ -98,8 +97,6 @@ class _EditorcamentoState extends State<Editorcamento> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erro ao subir: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -130,7 +127,6 @@ class _EditorcamentoState extends State<Editorcamento> {
 
  Future<void> _updateClient(String projectId) async {
   if (!_formKey.currentState!.validate()) return;
-  setState(() => _isLoading = true);
   
   try {
     // Pegue o texto, mas trate o mask formatter
@@ -172,27 +168,22 @@ class _EditorcamentoState extends State<Editorcamento> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Erro ao salvar: $e')));
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? DellalioTheme.darkBackground : DellalioTheme.lightBackground;
-    final cardBg = isDark ? DellalioTheme.darkSurface : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
+    final isDark = true;
+    final textColor = panelIvory;
 
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        title: const Text('EDITAR CLIENTE E PROJETO'),
-        backgroundColor: petroleoColor,
-        foregroundColor: Colors.white,
-      ),
-      body: StreamBuilder<DocumentSnapshot>(
+      backgroundColor: inkPageBg,
+      body: Column(
+        children: [
+          const DellalioSubHeader(title: "Editar cliente e projeto"),
+          Expanded(
+            child: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('orcamentos')
             .doc(widget.orcamentoId)
@@ -259,8 +250,8 @@ if (!_initialized) {
                       children: [
                         Container(
                           height: 200,
-                          decoration: const BoxDecoration(
-                            color: petroleoColor,
+                          decoration: BoxDecoration(
+                            color: inkSurface,
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(14),
@@ -311,7 +302,7 @@ if (!_initialized) {
                         ),
 
                         const SizedBox(height: 30),
-                        Divider(color: isDark ? Colors.white24 : Colors.grey.shade300),
+                        Divider(color: hairline),
                         const SizedBox(height: 10),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -345,7 +336,7 @@ if (!_initialized) {
                                       return Container(
                                         decoration: BoxDecoration(
                                           border: Border.all(
-                                            color: isDark ? Colors.white24 : Colors.grey.shade300,
+                                            color: hairline,
                                           ),
                                           borderRadius: BorderRadius.circular(4),
                                         ),
@@ -462,25 +453,13 @@ if (!_initialized) {
                       ],
                     ),
                   ),
-                  SizedBox(
-                    height: 60,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                        ),
-                        elevation: 0,
-                      ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                    child: DellalioGoldButton(
+                      label: "Salvar alterações",
+                      icon: Icons.save_outlined,
+                      fullWidth: true,
                       onPressed: () => _updateClient(pDoc.id),
-                      child: const Text(
-                        'SALVAR ALTERAÇÕES',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ),
                   ),
                 ],
@@ -489,7 +468,10 @@ if (!_initialized) {
           );
         },
       ),
-    );
+    ),
+  ],
+),
+);
   }
 
   Widget _buildTextField(
@@ -498,39 +480,10 @@ if (!_initialized) {
     bool isDark, {
     List<TextInputFormatter>? formatters,
   }) {
-    final textColor = isDark ? Colors.white : Colors.black87;
-    final labelColor = isDark ? DellalioTheme.accentGold : petroleoColor;
-    final fillColor = isDark ? DellalioTheme.darkSurface : Colors.white;
-    final borderColor = isDark ? Colors.white24 : const Color(0xFFBDBDBD);
-    final focusedBorderColor = isDark ? DellalioTheme.accentGold : petroleoColor;
-
-    return TextFormField(
+    return DellalioFormField(
       controller: controller,
+      label: label,
       inputFormatters: formatters,
-      style: TextStyle(color: textColor, fontWeight: FontWeight.bold),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(
-          color: labelColor,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1,
-          fontSize: 13,
-        ),
-        filled: true,
-        fillColor: fillColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: borderColor),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: borderColor),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: focusedBorderColor, width: 2.0),
-        ),
-      ),
     );
   }
 

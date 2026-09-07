@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:DELLALIO/screens/agenda/agenda_screen.dart';
 import 'package:DELLALIO/screens/clientes/manageclients.dart';
 import 'package:DELLALIO/screens/cronograma/cronograma_screen.dart';
@@ -11,11 +13,13 @@ import 'package:auto_updater/auto_updater.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
+import 'package:rxdart/rxdart.dart';
+
 import '../../core/theme.dart';
 import '../../core/user_session.dart';
 import '../login/login_screen.dart';
-import 'package:intl/intl.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Versão atual do aplicativo (extraída do pubspec.yaml)
 const String kAppVersion = '1.4.1';
@@ -36,6 +40,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
   }
 
+  static const List<_NavEntry> _navEntries = [
+    _NavEntry(Icons.dashboard_outlined, "Início", 0),
+    _NavEntry(Icons.inventory_2_outlined, "Estoque", 1),
+    _NavEntry(Icons.notifications_outlined, "Lembretes", 2),
+    _NavEntry(Icons.people_outline, "Clientes", 3),
+    _NavEntry(Icons.timelapse_outlined, "Cronograma", 4),
+    _NavEntry(Icons.chat_bubble_outline, "Mensagens", 5),
+    _NavEntry(Icons.task_alt_outlined, "Tarefas", 6),
+    _NavEntry(Icons.calendar_today_outlined, "Agenda", 7),
+    _NavEntry(Icons.work_outline, "Orçamentos", 8),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -52,53 +68,131 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: inkPageBg,
       body: Row(
         children: [
           Material(
-            color: const Color(0xFF0D0D0D),
-            child: SizedBox(
-              width: 240,
+            color: Colors.transparent,
+            child: Container(
+              width: 236,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [inkSurfaceHover, inkPageBg],
+                  stops: const [0.0, 0.85],
+                ),
+                border: Border(right: BorderSide(color: hairline)),
+              ),
               child: Column(
                 children: [
-                  // Logo
+                  // Marca
                   Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Image.asset('assets/imagens/logo/logo ld.png',
-                        width: 150, fit: BoxFit.contain),
+                    padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                    child: Row(
+                      children: [
+                        Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: dellalioGold,
+                                  width: 1.4,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: ClipOval(
+                                child: Image.asset(
+                                  'assets/imagens/logo/logo ld.png',
+                                  width: 38,
+                                  height: 38,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            )
+                            .animate(onPlay: (c) => c.repeat(reverse: true))
+                            .custom(
+                              duration: 2200.ms,
+                              builder: (context, value, child) => Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: dellalioGold.withValues(
+                                        alpha: 0.06 * value,
+                                      ),
+                                      blurRadius: 6,
+                                      spreadRadius: 4 * value,
+                                    ),
+                                  ],
+                                ),
+                                child: child,
+                              ),
+                            ),
+                        const SizedBox(width: 11),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dellalio',
+                              style: TextStyle(
+                                fontFamily: 'Fraunces',
+                                fontSize: 14.5,
+                                letterSpacing: 0.4,
+                                color: panelIvory,
+                              ),
+                            ),
+                            Text(
+                              'CÉREBRO',
+                              style: TextStyle(
+                                fontSize: 10,
+                                letterSpacing: 1.2,
+                                color: panelSlateDim,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                  const Divider(color: Colors.white24),
+                  Divider(color: hairline, height: 1),
 
                   // Itens do menu
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          _buildSidebarItem(Icons.dashboard, "Inicio", 0),
-                          _buildSidebarItem(Icons.inventory_2, "Estoque", 1),
-                          _buildSidebarItem(Icons.add_box, "Lembretes", 2),
-                          _buildSidebarItem(Icons.people, "Clientes", 3),
-                          _buildSidebarItem(Icons.timelapse, "Cronograma", 4),
-                          _buildSidebarItem(Icons.message, "Mensagens", 5),
-                          _buildSidebarItem(Icons.task, "Tarefas", 6),
-                          _buildSidebarItem(Icons.calendar_today, "Agenda", 7),
-                          _buildSidebarItem(Icons.work, "Orçamentos", 8),
-                        ],
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Column(
+                          children: [
+                            for (final entry in _navEntries)
+                              _buildSidebarItem(entry),
+                          ],
+                        ),
                       ),
                     ),
                   ),
 
                   // Rodapé
-                  const Divider(color: Colors.white24),
+                  Divider(color: hairline, height: 1),
                   _buildThemeToggle(),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       children: [
                         Expanded(
-                            child: _buildSidebarItem(Icons.person, "Perfil", 9)),
+                          child: _buildSidebarItem(
+                            const _NavEntry(Icons.person_outline, "Perfil", 9),
+                          ),
+                        ),
                         Expanded(
-                            child: _buildSidebarItem(Icons.logout, "Sair", -1)),
+                          child: _buildSidebarItem(
+                            const _NavEntry(Icons.logout, "Sair", -1),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -115,13 +209,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildThemeToggle() {
     final isDark = UserSession.isDarkMode();
     return ListTile(
+      dense: true,
       leading: Icon(
-        isDark ? Icons.light_mode : Icons.dark_mode,
-        color: Colors.white70,
+        isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+        size: 16,
+        color: panelSlateDim,
       ),
       title: Text(
-        isDark ? 'Modo Claro' : 'Modo Escuro',
-        style: const TextStyle(color: Colors.white70),
+        isDark ? 'Modo claro' : 'Modo escuro',
+        style: TextStyle(color: panelSlateDim, fontSize: 11.5),
       ),
       onTap: () async {
         await UserSession.toggleDarkMode();
@@ -131,47 +227,123 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSidebarItem(IconData icon, String title, int index) {
-    return ListTile(
-      leading: Icon(icon,
-          color: _selectedIndex == index ? Colors.amber : Colors.white70),
-      title: Text(title,
-          style: TextStyle(
-              color: _selectedIndex == index ? Colors.amber : Colors.white70)),
-      onTap: () {
-        if (index == -1) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-        } else {
-          _navigateTo(index);
-        }
-      },
+  Widget _buildSidebarItem(_NavEntry entry) {
+    final bool isActive = _selectedIndex == entry.index;
+    final int staggerIndex = entry.index < 0 ? 0 : entry.index;
+    return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(vertical: 2),
+          decoration: BoxDecoration(
+            color: isActive
+                ? dellalioGold.withValues(alpha: 0.09)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            border: Border(
+              left: BorderSide(
+                color: isActive ? dellalioGold : Colors.transparent,
+                width: 2,
+              ),
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: ListTile(
+              dense: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+              ),
+              leading: entry.index == 9
+                  ? _buildProfileAvatar(isActive)
+                  : Icon(
+                      entry.icon,
+                      size: 18,
+                      color: isActive ? dellalioGoldSoft : panelSlate,
+                    ),
+              title: Text(
+                entry.label,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isActive ? dellalioGoldSoft : panelSlate,
+                ),
+              ),
+              onTap: () {
+                if (entry.index == -1) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                } else {
+                  _navigateTo(entry.index);
+                }
+              },
+            ),
+          ),
+        )
+        .animate(delay: (60 * staggerIndex).ms)
+        .fadeIn(duration: 320.ms)
+        .slideX(begin: -0.06, end: 0, curve: Curves.easeOut);
+  }
+
+  Widget _buildProfileAvatar(bool isActive) {
+    final String? photoUrl = FirebaseAuth.instance.currentUser?.photoURL;
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return Icon(
+        Icons.person_outline,
+        size: 18,
+        color: isActive ? dellalioGoldSoft : panelSlate,
+      );
+    }
+    return CircleAvatar(
+      radius: 10,
+      backgroundColor: inkSurfaceHover,
+      backgroundImage: NetworkImage(photoUrl),
     );
   }
 }
 
-class DashboardContent extends StatelessWidget {
+class _NavEntry {
+  final IconData icon;
+  final String label;
+  final int index;
+  const _NavEntry(this.icon, this.label, this.index);
+}
+
+class DashboardContent extends StatefulWidget {
   final Function(int) onNavigate;
   const DashboardContent({super.key, required this.onNavigate});
 
   @override
+  State<DashboardContent> createState() => _DashboardContentState();
+}
+
+class _DashboardContentState extends State<DashboardContent> {
+  late final Timer _clockTimer;
+  DateTime _now = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
-    String? photoUrl = user?.photoURL;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("PAINEL DELLALIO"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.system_update),
-            tooltip: 'Buscar atualizações',
-            onPressed: () => _checkForUpdates(context),
-          ),
-        ],
-      ),
+      backgroundColor: inkPageBg,
       body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(34, 30, 34, 30),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FutureBuilder<DocumentSnapshot>(
               future: FirebaseFirestore.instance
@@ -184,48 +356,56 @@ class DashboardContent extends StatelessWidget {
                   final data = snapshot.data!.data() as Map<String, dynamic>;
                   displayNome = data['nome'] ?? "Usuário";
                 }
-                return Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      // Avatar + Nome
-                      CircleAvatar(
-                        radius: 25,
-                        backgroundColor: Colors.grey[300],
-                        backgroundImage: photoUrl != null
-                            ? NetworkImage(photoUrl)
-                            : null,
-                        child: photoUrl == null
-                            ? const Icon(Icons.person, size: 30)
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Bem-vindo, $displayNome".toUpperCase(),
-                              style: const TextStyle(
-                                  fontSize: 22, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 2),
-                          Text("v$kAppVersion",
-                              style: TextStyle(
-                                  fontSize: 12, color: Colors.grey[500])),
+                          Text(
+                            "PAINEL GERAL",
+                            style: TextStyle(
+                              fontSize: 11,
+                              letterSpacing: 2,
+                              color: panelSlateDim,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            "Bem-vindo, $displayNome",
+                            style: TextStyle(
+                              fontFamily: 'Fraunces',
+                              fontWeight: FontWeight.w500,
+                              fontSize: 27,
+                              color: dellalioTitle,
+                            ),
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    Text(
+                      DateFormat('HH:mm:ss').format(_now),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: panelSlateDim,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    _UpdateButton(onPressed: () => _checkForUpdates(context)),
+                  ],
                 );
               },
-            ),
+            ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0),
+            const SizedBox(height: 26),
             _buildKPISection(),
-            // Seção de próximos compromissos em destaque
+            const SizedBox(height: 22),
             _buildProximosCompromissosDestaque(user?.uid),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text("PRIORIDADES DO DIA",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            _TimelinePanel(
+              title: "PRIORIDADES DO DIA",
+              child: _buildPriorityProjectsList(),
             ),
-            _buildPriorityProjectsList(),
           ],
         ),
       ),
@@ -237,8 +417,9 @@ class DashboardContent extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('clients').snapshots(),
       builder: (context, clientSnapshot) {
-        final totalClientes =
-            clientSnapshot.hasData ? clientSnapshot.data!.docs.length : 0;
+        final totalClientes = clientSnapshot.hasData
+            ? clientSnapshot.data!.docs.length
+            : 0;
 
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance.collection('stock').snapshots(),
@@ -249,16 +430,13 @@ class DashboardContent extends StatelessWidget {
                 var data = doc.data() as Map<String, dynamic>;
                 int q = data['quantity'] ?? 0;
                 int m = data['minQuantity'] ?? 0;
-                // Crítico: quantidade atual <= mínima + margem de 10
-                if (q <= (m + 10)) {
-                  estoqueCritico++;
-                }
+                if (q <= (m + 10)) estoqueCritico++;
               }
             }
 
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('lembretes')
+                  .collection('reminders')
                   .snapshots(),
               builder: (context, reminderSnapshot) {
                 final totalLembretes = reminderSnapshot.hasData
@@ -275,49 +453,88 @@ class DashboardContent extends StatelessWidget {
                         ? chatSnapshot.data!.docs.length
                         : 0;
 
-                    // Conta conversas com mensagens não lidas
                     int chatsPendentes = 0;
                     if (chatSnapshot.hasData) {
                       for (var chatDoc in chatSnapshot.data!.docs) {
-                        final data =
-                            chatDoc.data() as Map<String, dynamic>;
+                        final data = chatDoc.data() as Map<String, dynamic>;
                         final unread = data['unreadCount'] as int?;
-                        if (unread != null && unread > 0) {
-                          chatsPendentes++;
-                        }
+                        if (unread != null && unread > 0) chatsPendentes++;
                       }
                     }
 
-                    return Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _kpiCard("Total Clientes",
-                                "$totalClientes", Colors.blue, () => onNavigate(3)),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _kpiCard("Estoque Crítico",
-                                "$estoqueCritico", Colors.red, () => onNavigate(1)),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _kpiCard("Lembretes", "$totalLembretes",
-                                Colors.orange, () => onNavigate(2)),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: _kpiCardComBadge(
-                              "Mensagens",
-                              "$totalChats",
-                              Colors.green,
-                              chatsPendentes,
-                              () => onNavigate(5),
-                            ),
-                          ),
-                        ],
-                      ),
+                    return Wrap(
+                      spacing: 20,
+                      runSpacing: 20,
+                      children: [
+                        _KpiCard(
+                          label: "Clientes ativos",
+                          value: totalClientes,
+                          accentColor: dellalioGold,
+                          sparkPoints: const [
+                            0.2,
+                            0.35,
+                            0.25,
+                            0.55,
+                            0.5,
+                            0.8,
+                            0.95,
+                          ],
+                          delayIndex: 0,
+                          onTap: () => widget.onNavigate(3),
+                        ),
+                        _KpiCard(
+                          label: "Estoque crítico",
+                          value: estoqueCritico,
+                          accentColor: panelRust,
+                          dotColor: panelRust,
+                          sparkPoints: const [
+                            0.75,
+                            0.65,
+                            0.7,
+                            0.5,
+                            0.55,
+                            0.3,
+                            0.15,
+                          ],
+                          delayIndex: 1,
+                          onTap: () => widget.onNavigate(1),
+                        ),
+                        _KpiCard(
+                          label: "Lembretes",
+                          value: totalLembretes,
+                          accentColor: navyAccent,
+                          dotColor: navyAccent,
+                          sparkPoints: const [
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                          ],
+                          delayIndex: 2,
+                          onTap: () => widget.onNavigate(2),
+                        ),
+                        _KpiCard(
+                          label: "Mensagens",
+                          value: totalChats,
+                          accentColor: panelSage,
+                          dotColor: panelSage,
+                          badgeCount: chatsPendentes,
+                          sparkPoints: const [
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                            0.5,
+                          ],
+                          delayIndex: 3,
+                          onTap: () => widget.onNavigate(5),
+                        ),
+                      ],
                     );
                   },
                 );
@@ -329,77 +546,6 @@ class DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _kpiCard(
-      String title, String value, Color color, VoidCallback onTap) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              Text(title, style: const TextStyle(fontSize: 14)),
-              const SizedBox(height: 8),
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _kpiCardComBadge(String title, String value, Color color,
-      int pendingCount, VoidCallback onTap) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(title, style: const TextStyle(fontSize: 14)),
-                  if (pendingCount > 0) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: const BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        "$pendingCount",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(value,
-                  style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Dispara a verificação manual de atualizações via auto_updater (WinSparkle).
   Future<void> _checkForUpdates(BuildContext context) async {
     try {
       await autoUpdater.checkForUpdates();
@@ -423,16 +569,18 @@ class DashboardContent extends StatelessWidget {
     }
   }
 
-  /// Widget de próximos compromissos em destaque na dashboard
   Widget _buildProximosCompromissosDestaque(String? userId) {
     if (userId == null) return const SizedBox.shrink();
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('agenda')
-          .where('date',
-              isGreaterThanOrEqualTo:
-                  Timestamp.fromDate(DateTime.now().subtract(const Duration(hours: 1))))
+          .where(
+            'date',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(
+              DateTime.now().subtract(const Duration(hours: 1)),
+            ),
+          )
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -448,162 +596,52 @@ class DashboardContent extends StatelessWidget {
 
         if (proximos.isEmpty) return const SizedBox.shrink();
 
-        // Ordena por data
         proximos.sort((a, b) {
           final da = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
           final db = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
           return da.toDate().compareTo(db.toDate());
         });
 
-        // Pega até 5 próximos compromissos
         final exibidos = proximos.take(5).toList();
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: Card(
-            elevation: 2,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.event_note,
-                          color: Color.fromARGB(255, 98, 80, 63), size: 22),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "PRÓXIMOS COMPROMISSOS",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: Color.fromARGB(255, 98, 80, 63),
-                        ),
-                      ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => onNavigate(7),
-                        child: const Text("Ver agenda",
-                            style: TextStyle(fontSize: 12)),
-                      ),
-                    ],
-                  ),
-                  const Divider(),
-                  ...exibidos.map((doc) {
-                    final data = doc.data() as Map<String, dynamic>;
-                    final date = (data['date'] as Timestamp).toDate();
-                    final text = data['text'] ?? '';
-                    final time = data['time'] ?? '';
-                    final int importancia = data['importancia'] ?? 0;
-                    final String userName =
-                        (data['userName'] ?? '?').toString().toUpperCase();
-                    final Color userColor = Color(
-                      int.tryParse(data['userColor']
-                                  ?.toString()
-                                  .replaceFirst('#', '0xff') ??
-                              '0xffE53935') ??
-                          0xffE53935,
-                    );
+        return _TimelinePanel(
+          title: "PRÓXIMOS COMPROMISSOS",
+          trailing: TextButton(
+            onPressed: () => widget.onNavigate(7),
+            style: TextButton.styleFrom(foregroundColor: dellalioGold),
+            child: const Text("Ver agenda", style: TextStyle(fontSize: 12)),
+          ),
+          child: Column(
+            children: exibidos.asMap().entries.map((entry) {
+              final i = entry.key;
+              final doc = entry.value;
+              final data = doc.data() as Map<String, dynamic>;
+              final date = (data['date'] as Timestamp).toDate();
+              final text = data['text'] ?? '';
+              final time = data['time'] ?? '';
+              final int importancia = data['importancia'] ?? 0;
+              final String userName = (data['userName'] ?? '?')
+                  .toString()
+                  .toUpperCase();
 
-                    final Color impColor = importancia >= 3
-                        ? Colors.red
-                        : importancia >= 2
-                            ? Colors.orange
-                            : const Color.fromARGB(255, 98, 80, 63);
+              final Color impColor = importancia >= 3
+                  ? panelRust
+                  : importancia >= 2
+                  ? dellalioGold
+                  : navyAccent;
 
-                    final String dataFormatada =
-                        DateFormat('dd/MM').format(date);
-                    final String horaStr =
-                        time.isNotEmpty ? ' às $time' : '';
+              final String dataFormatada = DateFormat('dd/MM').format(date);
+              final String horaStr = time.isNotEmpty ? ' às $time' : '';
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: InkWell(
-                        onTap: () => onNavigate(7),
-                        borderRadius: BorderRadius.circular(8),
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: impColor.withValues(alpha: 0.05),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border(
-                              left: BorderSide(
-                                  color: impColor.withValues(alpha: 0.5),
-                                  width: 3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 14,
-                                backgroundColor: userColor,
-                                child: Text(
-                                  userName.isNotEmpty
-                                      ? userName[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      text.isNotEmpty
-                                          ? text
-                                          : 'Sem título',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '$dataFormatada$horaStr',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              if (importancia >= 2)
-                                Icon(
-                                  Icons.flag,
-                                  size: 16,
-                                  color: impColor,
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                  if (proximos.length > 5)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Center(
-                        child: Text(
-                          '+ ${proximos.length - 5} compromisso(s) a mais',
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey[500]),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
+              return _TimelineRow(
+                markerColor: impColor,
+                title: text.isNotEmpty ? text : 'Sem título',
+                subtitle:
+                    "${userName.isNotEmpty ? '$userName • ' : ''}$dataFormatada$horaStr",
+                delayIndex: i,
+                onTap: () => widget.onNavigate(7),
+              );
+            }).toList(),
           ),
         );
       },
@@ -615,36 +653,47 @@ class DashboardContent extends StatelessWidget {
       stream: FirebaseFirestore.instance.collection('clients').snapshots(),
       builder: (context, clientSnapshot) {
         if (!clientSnapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(
+              child: CircularProgressIndicator(color: dellalioGold),
+            ),
+          );
         }
 
         final clientDocs = clientSnapshot.data!.docs;
         final List<Stream<List<Map<String, dynamic>>>> projectStreams =
             clientDocs.map((clientDoc) {
-          return clientDoc.reference
-              .collection('projects')
-              .where('status', isNotEqualTo: 'finalizado')
-              .snapshots()
-              .map((snap) => snap.docs.map((doc) {
-                    final data = doc.data();
-                    data['clientName'] =
-                        (clientDoc.data() as Map<String, dynamic>)['name']
-                                ?.toString()
-                                .toUpperCase() ??
-                            'CLIENTE';
-                    return data;
-                  }).toList());
-        }).toList();
+              return clientDoc.reference
+                  .collection('projects')
+                  .where('status', isNotEqualTo: 'finalizado')
+                  .snapshots()
+                  .map(
+                    (snap) => snap.docs.map((doc) {
+                      final data = doc.data();
+                      data['clientName'] =
+                          (clientDoc.data() as Map<String, dynamic>)['name']
+                              ?.toString()
+                              .toUpperCase() ??
+                          'CLIENTE';
+                      return data;
+                    }).toList(),
+                  );
+            }).toList();
 
         return StreamBuilder<List<List<Map<String, dynamic>>>>(
           stream: Rx.combineLatestList(projectStreams),
           builder: (context, projectSnapshot) {
             if (!projectSnapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: CircularProgressIndicator(color: dellalioGold),
+                ),
+              );
             }
 
-            final allProjects =
-                projectSnapshot.data!.expand((i) => i).toList();
+            final allProjects = projectSnapshot.data!.expand((i) => i).toList();
             final validProjects = allProjects.where((data) {
               final date = data['deliveryDate'];
               return date != null && date is Timestamp;
@@ -659,76 +708,557 @@ class DashboardContent extends StatelessWidget {
             final limitedProjects = validProjects.take(5).toList();
 
             if (limitedProjects.isEmpty) {
-              return const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text("Nenhuma prioridade pendente."),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  "Nenhuma prioridade pendente.",
+                  style: TextStyle(color: panelSlate),
+                ),
               );
             }
 
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: limitedProjects.length,
-              itemBuilder: (context, index) {
-                final data = limitedProjects[index];
+            return Column(
+              children: limitedProjects.asMap().entries.map((entry) {
+                final index = entry.key;
+                final data = entry.value;
                 final date = (data['deliveryDate'] as Timestamp).toDate();
                 final String dataFormatada =
                     "${date.day}/${date.month}/${date.year}";
+                final String status = (data['status'] ?? 'N/A')
+                    .toString()
+                    .toUpperCase();
 
-                return Card(
-                  elevation: 3,
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(data['clientName'] ?? 'CLIENTE',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
-                        const Divider(),
-                        Text(
-                            data['projectName']
-                                    ?.toString()
-                                    .toUpperCase() ??
-                                'PROJETO SEM NOME',
-                            style: const TextStyle(fontSize: 14)),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text("Entrega: $dataFormatada".toUpperCase()),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(5),
-                              ),
-                              child: Text(
-                                data['status']
-                                        ?.toString()
-                                        .toUpperCase() ??
-                                    'N/A',
-                                style: const TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                return _TimelineRow(
+                  markerColor: dellalioGold,
+                  title: (data['clientName'] ?? 'CLIENTE').toString(),
+                  subtitle:
+                      "${data['projectName']?.toString().toUpperCase() ?? 'PROJETO SEM NOME'} • Entrega $dataFormatada",
+                  delayIndex: index,
+                  trailing: _StatusPill(label: status),
                 );
-              },
+              }).toList(),
             );
           },
         );
       },
     );
   }
+}
+
+/// Botão circular de "buscar atualizações", com leve giro no hover.
+class _UpdateButton extends StatefulWidget {
+  final VoidCallback onPressed;
+  const _UpdateButton({required this.onPressed});
+
+  @override
+  State<_UpdateButton> createState() => _UpdateButtonState();
+}
+
+class _UpdateButtonState extends State<_UpdateButton> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: _hover ? dellalioGold : hairline,
+              width: 1,
+            ),
+          ),
+          alignment: Alignment.center,
+          child: AnimatedRotation(
+            duration: const Duration(milliseconds: 220),
+            turns: _hover ? 0.06 : 0,
+            child: Icon(
+              Icons.refresh,
+              size: 16,
+              color: _hover ? dellalioGoldSoft : panelSlate,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Painel com título estilo "eyebrow" + conteúdo, entrando com fade/rise.
+class _TimelinePanel extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+  const _TimelinePanel({
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 22),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  letterSpacing: 1.6,
+                  color: panelSlateDim,
+                ),
+              ),
+              const Spacer(),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 14),
+          child,
+        ],
+      ).animate().fadeIn(duration: 400.ms).slideY(begin: 0.04, end: 0),
+    );
+  }
+}
+
+/// Linha da lista de prioridades/compromissos, no estilo "linha do tempo".
+class _TimelineRow extends StatefulWidget {
+  final Color markerColor;
+  final String title;
+  final String subtitle;
+  final int delayIndex;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+  const _TimelineRow({
+    required this.markerColor,
+    required this.title,
+    required this.subtitle,
+    required this.delayIndex,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  State<_TimelineRow> createState() => _TimelineRowState();
+}
+
+class _TimelineRowState extends State<_TimelineRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+          padding: const EdgeInsets.only(bottom: 8, left: 18),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(
+                left: -18,
+                top: 0,
+                bottom: 0,
+                child: Container(width: 1, color: hairlineNavy),
+              ),
+              Positioned(
+                left: -21,
+                top: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: widget.markerColor,
+                      border: Border.all(color: inkPageBg, width: 3),
+                    ),
+                  ),
+                ),
+              ),
+              MouseRegion(
+                onEnter: (_) => setState(() => _hover = true),
+                onExit: (_) => setState(() => _hover = false),
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: widget.onTap,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _hover ? inkSurfaceHover : inkSurface,
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                        color: _hover ? hairlineNavy : Colors.transparent,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.title,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: panelIvory,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.subtitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: panelSlate,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (widget.trailing != null) widget.trailing!,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+        .animate(delay: (70 * widget.delayIndex).ms)
+        .fadeIn(duration: 380.ms)
+        .slideX(begin: -0.03, end: 0, curve: Curves.easeOut);
+  }
+}
+
+class _StatusPill extends StatelessWidget {
+  final String label;
+  const _StatusPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: dellalioGold.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: dellalioGold.withValues(alpha: 0.35)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10.5,
+          letterSpacing: 0.6,
+          color: dellalioGoldSoft,
+        ),
+      ),
+    );
+  }
+}
+
+/// Card de KPI — alto e estreito, régua superior colorida, número que sobe
+/// contando e uma mini sparkline decorativa, todos animados na entrada.
+class _KpiCard extends StatefulWidget {
+  final String label;
+  final int value;
+  final Color accentColor;
+  final Color? dotColor;
+  final int? badgeCount;
+  final List<double> sparkPoints;
+  final int delayIndex;
+  final VoidCallback onTap;
+
+  const _KpiCard({
+    required this.label,
+    required this.value,
+    required this.accentColor,
+    required this.sparkPoints,
+    required this.delayIndex,
+    required this.onTap,
+    this.dotColor,
+    this.badgeCount,
+  });
+
+  @override
+  State<_KpiCard> createState() => _KpiCardState();
+}
+
+class _KpiCardState extends State<_KpiCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final delay = (90 * widget.delayIndex).ms;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child:
+            AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  transform: Matrix4.translationValues(0, _hover ? -5 : 0, 0),
+                  width: 172,
+                  height: 248,
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    color: _hover ? inkSurfaceHover : inkSurface,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: hairline),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(height: 2, color: widget.accentColor),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 24, 20, 22),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (widget.dotColor != null) ...[
+                                        _PulsingDot(color: widget.dotColor!),
+                                        const SizedBox(width: 6),
+                                      ],
+                                      Expanded(
+                                        child: Text(
+                                          widget.label.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            letterSpacing: 1.3,
+                                            color: panelSlate,
+                                          ),
+                                        ),
+                                      ),
+                                      if ((widget.badgeCount ?? 0) > 0)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: panelRust,
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            '${widget.badgeCount}',
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 9),
+                                  _GrowingRule(delay: delay + 200.ms),
+                                ],
+                              ),
+                              _CountUpNumber(
+                                target: widget.value,
+                                color: panelIvory,
+                                delay: delay + 400.ms,
+                              ),
+                              SizedBox(
+                                height: 26,
+                                child: _Sparkline(
+                                  points: widget.sparkPoints,
+                                  color: widget.accentColor,
+                                  delay: delay + 450.ms,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+                .animate(delay: delay)
+                .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+                .slideY(begin: 0.09, end: 0, curve: Curves.easeOut),
+      ),
+    );
+  }
+}
+
+class _PulsingDot extends StatelessWidget {
+  final Color color;
+  const _PulsingDot({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+          width: 6,
+          height: 6,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        )
+        .animate(onPlay: (c) => c.repeat(reverse: true))
+        .fadeOut(duration: 900.ms, curve: Curves.easeInOut)
+        .then()
+        .fadeIn(duration: 900.ms);
+  }
+}
+
+class _GrowingRule extends StatelessWidget {
+  final Duration delay;
+  const _GrowingRule({required this.delay});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeOut,
+      child: Container(height: 1, color: hairline),
+      builder: (context, value, child) {
+        return FractionallySizedBox(
+          alignment: Alignment.centerLeft,
+          widthFactor: value,
+          child: child,
+        );
+      },
+    ).animate(delay: delay).fadeIn(duration: 1.ms);
+  }
+}
+
+/// Número que sobe contando de 0 até [target], iniciando após [delay].
+class _CountUpNumber extends StatefulWidget {
+  final int target;
+  final Color color;
+  final Duration delay;
+  const _CountUpNumber({
+    required this.target,
+    required this.color,
+    required this.delay,
+  });
+
+  @override
+  State<_CountUpNumber> createState() => _CountUpNumberState();
+}
+
+class _CountUpNumberState extends State<_CountUpNumber> {
+  bool _start = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(widget.delay, () {
+      if (mounted) setState(() => _start = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<int>(
+      tween: IntTween(begin: 0, end: _start ? widget.target : 0),
+      duration: const Duration(milliseconds: 650),
+      curve: Curves.easeOut,
+      builder: (context, value, child) => Text(
+        '$value',
+        style: TextStyle(
+          fontFamily: 'Fraunces',
+          fontWeight: FontWeight.w500,
+          fontSize: 44,
+          height: 1,
+          color: widget.color,
+        ),
+      ),
+    );
+  }
+}
+
+/// Mini gráfico de linha decorativo desenhado com CustomPainter — sem
+/// dependências externas.
+class _Sparkline extends StatelessWidget {
+  final List<double> points;
+  final Color color;
+  final Duration delay;
+  const _Sparkline({
+    required this.points,
+    required this.color,
+    required this.delay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOut,
+      builder: (context, value, child) => CustomPaint(
+        size: const Size(double.infinity, 26),
+        painter: _SparklinePainter(
+          points: points,
+          color: color,
+          progress: value,
+        ),
+      ),
+    ).animate(delay: delay).fadeIn(duration: 1.ms);
+  }
+}
+
+class _SparklinePainter extends CustomPainter {
+  final List<double> points;
+  final Color color;
+  final double progress;
+  _SparklinePainter({
+    required this.points,
+    required this.color,
+    required this.progress,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+    final path = Path();
+    for (int i = 0; i < points.length; i++) {
+      final x = size.width * (i / (points.length - 1));
+      final y = size.height * (1 - points[i]);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    final metrics = path.computeMetrics().first;
+    final extractPath = metrics.extractPath(0, metrics.length * progress);
+
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.6
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(extractPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _SparklinePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }
