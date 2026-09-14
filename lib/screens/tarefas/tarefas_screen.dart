@@ -1030,22 +1030,13 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen>
           );
         }
 
-        final screenWidth = MediaQuery.of(context).size.width;
-        final crossAxisCount = screenWidth > 1200
-            ? 4
-            : screenWidth > 900
-            ? 3
-            : screenWidth > 600
-            ? 2
-            : 1;
-
         return GridView.builder(
           padding: const EdgeInsets.fromLTRB(34, 22, 34, 30),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 18,
-            mainAxisSpacing: 18,
-            childAspectRatio: 0.8,
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 240,
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 0.62,
           ),
           itemCount: docs.length,
           itemBuilder: (context, index) {
@@ -1066,6 +1057,7 @@ class _TarefasAdminScreenState extends State<TarefasAdminScreen>
               deadline: data['deadline'] ?? '--/--/--',
               createdByName: (data['createdByName'] ?? '—').toString(),
               createdAtLabel: criadoEm,
+              urgencia: (data['urgencia'] ?? 'Baixa').toString(),
               accent: _statusColor(status),
               statusLabel: _statusLabel(status),
               isParaTodos: isParaTodos,
@@ -1147,12 +1139,26 @@ class _Fab extends StatelessWidget {
   }
 }
 
+Color _urgenciaColor(String urgencia) {
+  switch (urgencia.toLowerCase()) {
+    case 'alta':
+      return panelRust;
+    case 'média':
+    case 'media':
+      return dellalioGold;
+    case 'baixa':
+    default:
+      return panelSage;
+  }
+}
+
 class _TaskCard extends StatefulWidget {
   final String title;
   final String observacoes;
   final String deadline;
   final String createdByName;
   final String createdAtLabel;
+  final String urgencia;
   final Color accent;
   final String statusLabel;
   final bool isParaTodos;
@@ -1170,6 +1176,7 @@ class _TaskCard extends StatefulWidget {
     required this.deadline,
     required this.createdByName,
     required this.createdAtLabel,
+    required this.urgencia,
     required this.accent,
     required this.statusLabel,
     required this.isParaTodos,
@@ -1215,142 +1222,187 @@ class _TaskCardState extends State<_TaskCard> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: hairline),
                   ),
-                  child: Column(
+                  child: Stack(
                     children: [
-                      Container(height: 3, color: widget.accent),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 15, 16, 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                      Column(
+                        children: [
+                          Container(height: 3, color: widget.accent),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(
+                                14,
+                                12,
+                                14,
+                                12,
+                              ),
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          widget.title,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: panelIvory,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      widget.avatarBuilder(),
+                                      if (widget.canEdit) ...[
+                                        const SizedBox(width: 4),
+                                        GestureDetector(
+                                          onTap: widget.onEdit,
+                                          child: Icon(
+                                            Icons.edit_outlined,
+                                            size: 13,
+                                            color: panelSlate,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 10,
+                                    ),
+                                    child: Container(
+                                      height: 1,
+                                      color: hairline,
+                                    ),
+                                  ),
                                   Expanded(
                                     child: Text(
-                                      widget.title,
+                                      widget.observacoes.isEmpty
+                                          ? "Sem observações."
+                                          : widget.observacoes,
                                       style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: panelIvory,
+                                        fontSize: 11.5,
+                                        height: 1.45,
+                                        color: panelIvory.withValues(
+                                          alpha: 0.85,
+                                        ),
                                       ),
-                                      maxLines: 1,
+                                      maxLines: 4,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
-                                  widget.avatarBuilder(),
-                                  if (widget.canEdit) ...[
-                                    const SizedBox(width: 2),
-                                    GestureDetector(
-                                      onTap: widget.onEdit,
-                                      child: Icon(
-                                        Icons.edit_outlined,
-                                        size: 13,
-                                        color: panelSlate,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 11,
-                                ),
-                                child: Container(height: 1, color: hairline),
-                              ),
-                              Expanded(
-                                child: Text(
-                                  widget.observacoes,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    height: 1.5,
-                                    color: panelIvory.withValues(alpha: 0.85),
-                                  ),
-                                  maxLines: 4,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              if (widget.mediaUrls.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 42,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: widget.mediaUrls.length,
-                                    itemBuilder: (context, i) => Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(4),
-                                        child: Image.network(
-                                          widget.mediaUrls[i],
-                                          width: 42,
-                                          height: 42,
-                                          fit: BoxFit.cover,
+                                  if (widget.mediaUrls.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      height: 38,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: widget.mediaUrls.length,
+                                        itemBuilder: (context, i) => Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 4,
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                            child: Image.network(
+                                              widget.mediaUrls[i],
+                                              width: 38,
+                                              height: 38,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ],
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                ),
-                                child: Container(height: 1, color: hairline),
-                              ),
-                              Text(
-                                "${widget.createdByName} ${widget.createdAtLabel.isNotEmpty ? '• ${widget.createdAtLabel}' : ''}",
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontStyle: FontStyle.italic,
-                                  color: panelSlateDim,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      widget.deadline,
-                                      style: TextStyle(
-                                        fontSize: 10.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: panelIvory,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                  ],
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    child: Container(
+                                      height: 1,
+                                      color: hairline,
                                     ),
                                   ),
-                                  if (widget.canEdit)
-                                    Padding(
-                                      padding: const EdgeInsets.only(right: 4),
-                                      child: GestureDetector(
-                                        onTap: widget.onDelete,
-                                        child: Icon(
-                                          Icons.delete_outline,
-                                          size: 13,
-                                          color: panelRust,
+                                  Text(
+                                    "${widget.createdByName}${widget.createdAtLabel.isNotEmpty ? ' • ${widget.createdAtLabel}' : ''}",
+                                    style: TextStyle(
+                                      fontSize: 9.5,
+                                      fontStyle: FontStyle.italic,
+                                      color: panelSlateDim,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.event_outlined,
+                                        size: 11,
+                                        color: panelSlateDim,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Expanded(
+                                        child: Text(
+                                          widget.deadline,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: panelIvory,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
-                                    ),
-                                  if (widget.isParaTodos) ...[
-                                    const DellalioBadge(
-                                      label: "TODOS",
-                                      color: panelViolet,
-                                    ),
-                                    const SizedBox(width: 4),
-                                  ],
-                                  DellalioBadge(
-                                    label: widget.statusLabel,
-                                    color: widget.accent,
+                                      if (widget.canEdit)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 4,
+                                          ),
+                                          child: GestureDetector(
+                                            onTap: widget.onDelete,
+                                            child: Icon(
+                                              Icons.delete_outline,
+                                              size: 13,
+                                              color: panelRust,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Row(
+                                    children: [
+                                      if (widget.isParaTodos) ...[
+                                        const DellalioBadge(
+                                          label: "TODOS",
+                                          color: panelViolet,
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
+                                      DellalioBadge(
+                                        label: widget.statusLabel,
+                                        color: widget.accent,
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ],
+                            ),
                           ),
+                        ],
+                      ),
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: DellalioLevelPin(
+                          color: _urgenciaColor(widget.urgencia),
+                          label: "Urgência: ${widget.urgencia}",
                         ),
                       ),
                     ],

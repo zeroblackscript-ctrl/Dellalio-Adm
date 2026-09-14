@@ -451,6 +451,45 @@ class DellalioStatusPill extends StatelessWidget {
 }
 
 /// Badge retangular pequeno — usado em cards de tarefas/lembretes.
+/// Pin de nível/prioridade — encaixa no canto superior direito de um card
+/// (sobre a barra de destaque), mostrando só a cor pra não poluir; o rótulo
+/// aparece via Tooltip no hover. Ex: urgência de tarefa, prioridade de
+/// lembrete.
+class DellalioLevelPin extends StatelessWidget {
+  final Color color;
+  final String label;
+  const DellalioLevelPin({
+    super.key,
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(7),
+            bottomLeft: Radius.circular(8),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.28),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.push_pin, size: 11, color: Colors.white),
+      ),
+    );
+  }
+}
+
 class DellalioBadge extends StatelessWidget {
   final String label;
   final Color color;

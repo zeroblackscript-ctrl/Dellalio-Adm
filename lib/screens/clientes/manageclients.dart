@@ -232,10 +232,12 @@ class _ClientCardState extends State<_ClientCard> {
                                     neutral: true,
                                   );
                                 }
-                                final pData =
-                                    projects.first.data()
-                                        as Map<String, dynamic>;
-                                final status = (pData['status'] ?? 'vendas')
+                                final firstData = projects.first.data();
+                                final Map<String, dynamic> pData =
+                                    firstData is Map<String, dynamic>
+                                        ? firstData
+                                        : <String, dynamic>{};
+                                final status = (pData['status'] ?? 'conferencia')
                                     .toString();
                                 return DellalioStatusPill(
                                   label: status.toUpperCase(),

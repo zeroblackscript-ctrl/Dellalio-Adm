@@ -56,11 +56,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       DashboardContent(onNavigate: _navigateTo),
-      const ManageStockScreen(),
-      const RemindersScreen(),
-      const ManageClientsListScreen(),
-      const CronogramaScreen(),
-      const MensagensScreen(),
+      ManageStockScreen(),
+      RemindersScreen(),
+      ManageClientsListScreen(),
+      CronogramaScreen(),
+      MensagensScreen(),
       TarefasAdminScreen(),
       AgendaScreen(),
       ManageOrcamentosListScreen(),
@@ -648,6 +648,25 @@ class _DashboardContentState extends State<DashboardContent> {
     );
   }
 
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pedido':
+        return statusPedido;
+      case 'conferencia':
+        return statusConferencia;
+      case 'producao':
+        return statusProducao;
+      case 'montagem':
+        return statusMontagem;
+      case 'entrega':
+        return statusEntrega;
+      case 'finalizado':
+        return statusFinalizado;
+      default:
+        return panelSlate;
+    }
+  }
+
   Widget _buildPriorityProjectsList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('clients').snapshots(),
@@ -724,17 +743,19 @@ class _DashboardContentState extends State<DashboardContent> {
                 final date = (data['deliveryDate'] as Timestamp).toDate();
                 final String dataFormatada =
                     "${date.day}/${date.month}/${date.year}";
-                final String status = (data['status'] ?? 'N/A')
-                    .toString()
-                    .toUpperCase();
+                final String rawStatus = (data['status'] ?? '').toString();
+                final String status = rawStatus.isEmpty
+                    ? 'N/A'
+                    : rawStatus.toUpperCase();
+                final Color statusColor = _statusColor(rawStatus);
 
                 return _TimelineRow(
-                  markerColor: dellalioGold,
+                  markerColor: statusColor,
                   title: (data['clientName'] ?? 'CLIENTE').toString(),
                   subtitle:
                       "${data['projectName']?.toString().toUpperCase() ?? 'PROJETO SEM NOME'} • Entrega $dataFormatada",
                   delayIndex: index,
-                  trailing: _StatusPill(label: status),
+                  trailing: _StatusPill(label: status, color: statusColor),
                 );
               }).toList(),
             );
@@ -947,24 +968,21 @@ class _TimelineRowState extends State<_TimelineRow> {
 
 class _StatusPill extends StatelessWidget {
   final String label;
-  const _StatusPill({required this.label});
+  final Color color;
+  const _StatusPill({required this.label, this.color = dellalioGold});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: dellalioGold.withValues(alpha: 0.07),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: dellalioGold.withValues(alpha: 0.35)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 10.5,
-          letterSpacing: 0.6,
-          color: dellalioGoldSoft,
-        ),
+        style: TextStyle(fontSize: 10.5, letterSpacing: 0.6, color: color),
       ),
     );
   }

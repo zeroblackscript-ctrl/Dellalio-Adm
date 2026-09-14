@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/dellalio_kit.dart';
 import '../../core/theme.dart';
 
 class RemindersScreen extends StatefulWidget {
@@ -21,6 +22,14 @@ class _RemindersScreenState extends State<RemindersScreen> {
   };
 
   Color _accentFor(String? id) => _colorMap[id] ?? dellalioGold;
+
+  static const Map<String, String> _levelLabels = {
+    'red': 'Alta',
+    'yellow': 'Média',
+    'green': 'Baixa',
+  };
+
+  String _levelLabelFor(String? id) => _levelLabels[id] ?? 'Média';
 
   void _showAddReminderDialog({DocumentSnapshot? existingDoc}) {
     final bool isEditing = existingDoc != null;
@@ -296,11 +305,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 4,
-                            crossAxisSpacing: 18,
-                            mainAxisSpacing: 18,
-                            childAspectRatio: 0.82,
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            crossAxisSpacing: 14,
+                            mainAxisSpacing: 14,
+                            childAspectRatio: 0.68,
                           ),
                       itemCount: docs.length,
                       itemBuilder: (context, index) {
@@ -308,13 +317,16 @@ class _RemindersScreenState extends State<RemindersScreen> {
                         final data = doc.data() as Map<String, dynamic>;
                         final DateTime dt = (data['dateTime'] as Timestamp)
                             .toDate();
+                        final String colorId =
+                            data['color']?.toString() ?? '';
 
                         return _ReminderCard(
                           title: (data['title'] ?? '').toString().toUpperCase(),
                           content: (data['content'] ?? '').toString(),
                           author: (data['author'] ?? '').toString(),
                           dateLabel: DateFormat('dd/MM HH:mm').format(dt),
-                          accent: _accentFor(data['color']?.toString()),
+                          accent: _accentFor(colorId),
+                          levelLabel: _levelLabelFor(colorId),
                           delayIndex: index % 12,
                           onEdit: () =>
                               _showAddReminderDialog(existingDoc: doc),
@@ -453,6 +465,7 @@ class _ReminderCard extends StatefulWidget {
   final String author;
   final String dateLabel;
   final Color accent;
+  final String levelLabel;
   final int delayIndex;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -463,6 +476,7 @@ class _ReminderCard extends StatefulWidget {
     required this.author,
     required this.dateLabel,
     required this.accent,
+    required this.levelLabel,
     required this.delayIndex,
     required this.onEdit,
     required this.onDelete,
@@ -498,101 +512,118 @@ class _ReminderCardState extends State<_ReminderCard> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: hairline),
                 ),
-                child: Column(
+                child: Stack(
                   children: [
-                    Container(height: 3, color: widget.accent),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 15, 16, 14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                    Column(
+                      children: [
+                        Container(height: 3, color: widget.accent),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        widget.title,
+                                        style: TextStyle(
+                                          fontSize: 13.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: widget.accent,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    _CardIconButton(
+                                      icon: Icons.edit_outlined,
+                                      onTap: widget.onEdit,
+                                    ),
+                                    _CardIconButton(
+                                      icon: Icons.delete_outline,
+                                      danger: true,
+                                      onTap: widget.onDelete,
+                                    ),
+                                  ],
+                                ),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 11,
+                                  ),
+                                  child: Container(height: 1, color: hairline),
+                                ),
                                 Expanded(
                                   child: Text(
-                                    widget.title,
+                                    widget.content.isEmpty
+                                        ? "Sem descrição."
+                                        : widget.content,
                                     style: TextStyle(
-                                      fontSize: 13.5,
-                                      fontWeight: FontWeight.w600,
-                                      color: widget.accent,
+                                      fontSize: 12.5,
+                                      height: 1.55,
+                                      color: panelIvory.withValues(
+                                        alpha: 0.9,
+                                      ),
                                     ),
+                                    maxLines: 5,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                                _CardIconButton(
-                                  icon: Icons.edit_outlined,
-                                  onTap: widget.onEdit,
-                                ),
-                                const SizedBox(width: 2),
-                                _CardIconButton(
-                                  icon: Icons.delete_outline,
-                                  danger: true,
-                                  onTap: widget.onDelete,
-                                ),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 11),
-                              child: Container(height: 1, color: hairline),
-                            ),
-                            Expanded(
-                              child: Text(
-                                widget.content.isEmpty
-                                    ? "Sem descrição."
-                                    : widget.content,
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  height: 1.55,
-                                  color: panelIvory.withValues(alpha: 0.9),
-                                ),
-                                maxLines: 5,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_outlined,
-                                  size: 12,
-                                  color: panelSlateDim,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  widget.dateLabel,
-                                  style: TextStyle(
-                                    fontSize: 10.5,
-                                    color: panelSlateDim,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (widget.author.isNotEmpty) ...[
-                              const SizedBox(height: 5),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.person_outline,
-                                    size: 12,
-                                    color: panelSlateDim,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      widget.author,
+                                const SizedBox(height: 10),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_today_outlined,
+                                      size: 12,
+                                      color: panelSlateDim,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      widget.dateLabel,
                                       style: TextStyle(
                                         fontSize: 10.5,
                                         color: panelSlateDim,
                                       ),
-                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                  ],
+                                ),
+                                if (widget.author.isNotEmpty) ...[
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person_outline,
+                                        size: 12,
+                                        color: panelSlateDim,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          widget.author,
+                                          style: TextStyle(
+                                            fontSize: 10.5,
+                                            color: panelSlateDim,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
-                              ),
-                            ],
-                          ],
+                              ],
+                            ),
+                          ),
                         ),
+                      ],
+                    ),
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: DellalioLevelPin(
+                        color: widget.accent,
+                        label: "Prioridade: ${widget.levelLabel}",
                       ),
                     ),
                   ],

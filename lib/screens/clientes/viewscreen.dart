@@ -90,6 +90,11 @@ class ViewClientScreen extends StatelessWidget {
             .doc(clientId)
             .snapshots(),
         builder: (context, clientSnapshot) {
+          if (clientSnapshot.hasError) {
+            return _errorState(
+              'Não foi possível carregar este cliente: ${clientSnapshot.error}',
+            );
+          }
           if (!clientSnapshot.hasData) {
             return const Center(
               child: CircularProgressIndicator(color: dellalioGold),
@@ -98,8 +103,9 @@ class ViewClientScreen extends StatelessWidget {
 
           final rawData = clientSnapshot.data?.data();
           if (rawData == null) {
-            return const Center(
-              child: CircularProgressIndicator(color: dellalioGold),
+            return const DellalioEmptyState(
+              icon: Icons.person_off_outlined,
+              title: 'Cliente não encontrado',
             );
           }
           final data = rawData as Map<String, dynamic>;
@@ -158,9 +164,9 @@ class ViewClientScreen extends StatelessWidget {
                           children: [
                             _buildDetailsTab(context, data, projectData),
                             _buildProjectsGrid(clientId),
-                            _buildGalleryTab(projectData['galleryUrls']),
-                            _buildFilesTab(context, projectData['files']),
-                            _buildDocumentsTab(projectData['contratos']),
+                            _buildGalleryTab(_asList(projectData['galleryUrls'])),
+                            _buildFilesTab(context, _asList(projectData['files'])),
+                            _buildDocumentsTab(_asList(projectData['contratos'])),
                           ],
                         ),
                       ),
@@ -248,7 +254,8 @@ class ViewClientScreen extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(12),
                     child: Text(
-                      (pData['projectName'] ?? 'Projeto').toString(),
+                      (pData['projectName'] ?? pData['nome'] ?? 'Projeto')
+                          .toString(),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
@@ -278,7 +285,7 @@ class ViewClientScreen extends StatelessWidget {
     Map<String, dynamic> data,
     Map<String, dynamic> projectData,
   ) {
-    final String rawPhone = data['phone'] ?? '';
+    final String rawPhone = (data['phone'] ?? '').toString();
     final String formattedPhone = rawPhone.isNotEmpty
         ? MaskTextInputFormatter(
             mask: '(##) #####-####',
@@ -286,7 +293,7 @@ class ViewClientScreen extends StatelessWidget {
           ).maskText(rawPhone)
         : '---';
 
-    final String rawDoc = data['document'] ?? '';
+    final String rawDoc = (data['document'] ?? '').toString();
     final String formattedDoc = rawDoc.isNotEmpty
         ? MaskTextInputFormatter(
             mask: rawDoc.length > 11 ? '##.###.###/####-##' : '###.###.###-##',
@@ -459,5 +466,33 @@ class ViewClientScreen extends StatelessWidget {
 
   Widget _buildFilesTab(BuildContext context, List<dynamic>? files) {
     return PdfCoverGrid(items: files, emptyTitle: "Nenhum arquivo");
+  }
+
+  /// Converte de forma segura um valor do Firestore em uma lista,
+  /// retornando `null` quando o campo não for uma lista (evita crash
+  /// com dados antigos gravados em formato inesperado).
+  List<dynamic>? _asList(dynamic value) {
+    if (value is List) return List<dynamic>.from(value);
+    return null;
+  }
+
+  Widget _errorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: panelRust, size: 40),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: panelSlate),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

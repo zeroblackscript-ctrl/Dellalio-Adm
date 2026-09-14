@@ -25,6 +25,148 @@ class ProjectDetailScreen extends StatefulWidget {
 class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
   bool _isAdmin = false;
 
+  static const List<Map<String, String>> _statusChoices = [
+    {'key': 'conferencia', 'label': 'Conferência'},
+    {'key': 'pedido', 'label': 'Pedido'},
+    {'key': 'producao', 'label': 'Produção'},
+    {'key': 'entrega', 'label': 'Entrega'},
+    {'key': 'montagem', 'label': 'Montagem'},
+    {'key': 'finalizado', 'label': 'Finalizado'},
+  ];
+
+  Color _statusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pedido':
+        return statusPedido;
+      case 'conferencia':
+        return statusConferencia;
+      case 'producao':
+        return statusProducao;
+      case 'montagem':
+        return statusMontagem;
+      case 'entrega':
+        return statusEntrega;
+      case 'finalizado':
+        return statusFinalizado;
+      default:
+        return panelSlate;
+    }
+  }
+
+  String _statusLabel(String status) {
+    final match = _statusChoices.firstWhere(
+      (c) => c['key'] == status.toLowerCase(),
+      orElse: () => const {'key': '', 'label': ''},
+    );
+    return match['label']!.isNotEmpty ? match['label']! : 'Pendente';
+  }
+
+  Future<void> _updateProjectStatus(String newStatus) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('clients')
+          .doc(widget.clientId)
+          .collection('projects')
+          .doc(widget.projectId)
+          .update({'status': newStatus});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao atualizar status: $e')));
+    }
+  }
+
+  void _showStatusPicker(String currentStatus) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: inkSurface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        title: Text(
+          'Status do projeto',
+          style: TextStyle(
+            color: panelIvory,
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        content: SizedBox(
+          width: 280,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: _statusChoices.map((choice) {
+              final String key = choice['key']!;
+              final bool selected = key == currentStatus.toLowerCase();
+              final Color color = _statusColor(key);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (!selected) _updateProjectStatus(key);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? color.withValues(alpha: 0.14)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: selected ? color.withValues(alpha: 0.5) : hairline,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: color,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              choice['label']!,
+                              style: TextStyle(
+                                color: selected ? color : panelIvory,
+                                fontWeight: selected
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                          if (selected)
+                            Icon(Icons.check, size: 16, color: color),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Fechar', style: TextStyle(color: panelSlate)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -155,6 +297,17 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               .doc(widget.projectId)
               .snapshots(),
           builder: (context, projectSnap) {
+            if (clientSnap.hasError || projectSnap.hasError) {
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: Center(
+                  child: Text(
+                    'Não foi possível carregar o projeto.',
+                    style: TextStyle(color: panelSlate),
+                  ),
+                ),
+              );
+            }
             if (!clientSnap.hasData || !projectSnap.hasData) {
               return Scaffold(
                 backgroundColor: inkPageBg,
@@ -178,9 +331,28 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
               );
             }
 
-            final clientData = clientSnap.data!.data() as Map<String, dynamic>;
-            final projectData =
-                projectSnap.data!.data() as Map<String, dynamic>;
+            if (!clientSnap.data!.exists) {
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: Center(
+                  child: Text(
+                    'Cliente não encontrado.',
+                    style: TextStyle(color: panelSlate),
+                  ),
+                ),
+              );
+            }
+
+            final clientRaw = clientSnap.data!.data();
+            final projectRaw = projectSnap.data!.data();
+            final Map<String, dynamic> clientData =
+                clientRaw is Map<String, dynamic>
+                    ? clientRaw
+                    : <String, dynamic>{};
+            final Map<String, dynamic> projectData =
+                projectRaw is Map<String, dynamic>
+                    ? projectRaw
+                    : <String, dynamic>{};
 
             final String projectName =
                 (projectData['projectName'] ?? projectData['nome'])
@@ -285,7 +457,8 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
 
     final String corCaixa = (project['corCaixa'] ?? '').toString();
     final String corAcab = (project['corAcab'] ?? '').toString();
-    final List extras = project['extras'] ?? [];
+    final dynamic extrasRaw = project['extras'];
+    final List extras = extrasRaw is List ? extrasRaw : const [];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -300,11 +473,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
         _sectionTitle("Dados da obra"),
         _infoTile(Icons.home, address, "Endereço da obra"),
         if (cep.isNotEmpty) _infoTile(Icons.markunread_mailbox, cep, "CEP"),
-        _infoTile(
-          Icons.info,
-          (project['status'] ?? 'Pendente').toString(),
-          "Status do projeto",
-        ),
+        _statusTile((project['status'] ?? '').toString()),
         _infoTile(Icons.calendar_today, deliveryDate, "Entrega"),
         if ((project['formaPagamento'] ?? '').toString().isNotEmpty)
           _infoTile(
@@ -339,7 +508,7 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           const SizedBox(height: 16),
           _sectionTitle("Extras / adicionais"),
           ...extras.map((ex) {
-            final Map exMap = ex as Map;
+            final Map exMap = ex is Map ? ex : const {};
             final String nome = (exMap['nome'] ?? exMap['desc'] ?? 'Extra')
                 .toString();
             return _moneyTile(Icons.add_box, nome, '', exMap['valor']);
@@ -381,6 +550,41 @@ class _ProjectDetailScreenState extends State<ProjectDetailScreen> {
           fontWeight: FontWeight.w600,
           fontSize: 14,
           color: panelSlate,
+        ),
+      ),
+    );
+  }
+
+  Widget _statusTile(String status) {
+    final Color color = _statusColor(status);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: inkSurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: hairline),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _showStatusPicker(status),
+          child: ListTile(
+            leading: Icon(Icons.info, color: color),
+            title: Text(
+              _statusLabel(status),
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: panelIvory,
+                fontSize: 14,
+              ),
+            ),
+            subtitle: Text(
+              "Status do projeto • toque para alterar",
+              style: TextStyle(color: panelSlateDim, fontSize: 11),
+            ),
+            trailing: Icon(Icons.unfold_more, size: 18, color: panelSlate),
+          ),
         ),
       ),
     );

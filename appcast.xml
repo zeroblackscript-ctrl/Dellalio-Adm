@@ -5,6 +5,25 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 1.4.7</title>
+      <description>
+        - Correção: cliente que não abria ao clicar
+        - Correção: impossibilidade de atualizar o status do projeto
+        - Melhorias de robustez na leitura de clientes e projetos
+      </description>
+      <pubDate>Mon, 14 Sep 2026 13:00:00 -0300</pubDate>
+      <sparkle:version>1.4.7.15</sparkle:version>
+      <sparkle:shortVersionString>1.4.7</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.7</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.7/DellalioCerebroADM_Setup_v1.4.7.exe"
+        sparkle:version="1.4.7.15"
+        sparkle:shortVersionString="1.4.7"
+        length="21826644"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.4.6</title>
       <description>
         - Redesign do tema: Material 3 desabilitado no modo claro

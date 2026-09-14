@@ -165,6 +165,17 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
     return v.toStringAsFixed(2).replaceAll('.', ',');
   }
 
+  /// Converte de forma segura um valor de data vindo do Firestore,
+  /// aceitando Timestamp, DateTime, milissegundos (int) ou string ISO.
+  /// Evita crash quando projetos antigos gravaram a data em outro formato.
+  DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is int) return DateTime.fromMillisecondsSinceEpoch(value);
+    return DateTime.tryParse(value.toString());
+  }
+
 
   double _calcularTotal() {
     double total = _parseMoney(_valorCaixaController.text) + _parseMoney(_valorAcabController.text);
@@ -207,9 +218,10 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
       if (!mounted) return;
 
       // Load Project Data
-      _projectNameController.text = pData['projectName'] ?? pData['nome'] ?? '';
-      _notesController.text = pData['notes'] ?? '';
-      _currentStatus = pData['status'] ?? 'conferencia';
+      _projectNameController.text =
+          (pData['projectName'] ?? pData['nome'] ?? '').toString();
+      _notesController.text = (pData['notes'] ?? '').toString();
+      _currentStatus = (pData['status'] ?? 'conferencia').toString();
 
       // Load Orçamento Data (compatibilidade)
       _ambienteController.text = pData['ambiente'] ?? pData['environment'] ?? '';
@@ -223,10 +235,11 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
       _valorAcabController.text = _formatMoney(pData['valorAcab'] ?? 0);
 
       // Extras (lista de {nome/desc, valor})
-      final List extrasSalvos = pData['extras'] ?? [];
+      final dynamic extrasRaw = pData['extras'];
+      final List extrasSalvos = extrasRaw is List ? extrasRaw : const [];
       _extras.clear();
       for (var ex in extrasSalvos) {
-        final Map extMap = ex as Map;
+        final Map extMap = ex is Map ? ex : const {};
         _extras.add({
           'nome': TextEditingController(text: (extMap['nome'] ?? extMap['desc'] ?? '').toString()),
           'valor': TextEditingController(text: _formatMoney(extMap['valor'] ?? 0)),
@@ -252,7 +265,7 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
       _numberController.text = pData['addressNumber']?.toString() ?? '';
 
       // Load Dates
-      _deliveryDate = (pData['deliveryDate'] as Timestamp?)?.toDate();
+      _deliveryDate = _parseDate(pData['deliveryDate']);
 
       setState(() {
         _initialized = true;
@@ -443,10 +456,32 @@ class _EditProjectScreenState extends State<EditProjectScreen> {
               .doc(widget.projectId)
               .snapshots(),
           builder: (context, pSnap) {
-            if (!cSnap.hasData || !pSnap.hasData || !cSnap.data!.exists || !pSnap.data!.exists) {
+            if (cSnap.hasError || pSnap.hasError) {
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: Center(
+                  child: Text(
+                    'Não foi possível carregar o projeto.',
+                    style: TextStyle(color: panelSlate),
+                  ),
+                ),
+              );
+            }
+            if (!cSnap.hasData || !pSnap.hasData) {
               return Scaffold(
                 backgroundColor: inkPageBg,
                 body: const Center(child: CircularProgressIndicator(color: dellalioGold)),
+              );
+            }
+            if (!cSnap.data!.exists || !pSnap.data!.exists) {
+              return Scaffold(
+                backgroundColor: inkPageBg,
+                body: Center(
+                  child: Text(
+                    'Projeto não encontrado.',
+                    style: TextStyle(color: panelSlate),
+                  ),
+                ),
               );
             }
 
