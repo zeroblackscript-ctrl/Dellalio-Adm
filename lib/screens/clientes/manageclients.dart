@@ -85,6 +85,7 @@ class _ManageClientsListScreenState extends State<ManageClientsListScreen> {
             StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('clients')
+                  .orderBy(FieldPath.documentId)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) {
@@ -128,6 +129,7 @@ class _ManageClientsListScreenState extends State<ManageClientsListScreen> {
                     final id = docs[index].id;
                     final data = docs[index].data() as Map<String, dynamic>;
                     return _ClientCard(
+                      key: ValueKey(id),
                       clientId: id,
                       name: (data['name'] ?? 'SEM NOME')
                           .toString()
@@ -155,6 +157,7 @@ class _ClientCard extends StatefulWidget {
   final Color Function(String status) statusColorOf;
 
   const _ClientCard({
+    super.key,
     required this.clientId,
     required this.name,
     required this.delayIndex,

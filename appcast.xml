@@ -5,22 +5,22 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
-      <title>Versão 1.4.7</title>
+      <title>Versão 1.4.8</title>
       <description>
-        - Correção: cliente que não abria ao clicar
+        - Correção definitiva: cliente não abria ao clicar (condição de corrida na lista de clientes corrigida com chave estável e ordenação determinística)
         - Correção: impossibilidade de atualizar o status do projeto
         - Melhorias de robustez na leitura de clientes e projetos
       </description>
-      <pubDate>Mon, 14 Sep 2026 13:00:00 -0300</pubDate>
-      <sparkle:version>1.4.7.15</sparkle:version>
-      <sparkle:shortVersionString>1.4.7</sparkle:shortVersionString>
-      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.7</sparkle:releaseNotesLink>
+      <pubDate>Mon, 14 Sep 2026 16:30:00 -0300</pubDate>
+      <sparkle:version>1.4.8.16</sparkle:version>
+      <sparkle:shortVersionString>1.4.8</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v1.4.8</sparkle:releaseNotesLink>
       <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
       <enclosure
-        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.7/DellalioCerebroADM_Setup_v1.4.7.exe"
-        sparkle:version="1.4.7.15"
-        sparkle:shortVersionString="1.4.7"
-        length="21826644"
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v1.4.8/DellalioCerebroADM_Setup_v1.4.8.exe"
+        sparkle:version="1.4.8.16"
+        sparkle:shortVersionString="1.4.8"
+        length="21837453"
         type="application/octet-stream" />
     </item>
     <item>

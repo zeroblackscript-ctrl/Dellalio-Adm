@@ -22,7 +22,7 @@ import '../../core/user_session.dart';
 import '../login/login_screen.dart';
 
 /// Versão atual do aplicativo (extraída do pubspec.yaml)
-const String kAppVersion = '1.4.1';
+const String kAppVersion = '1.4.8';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
