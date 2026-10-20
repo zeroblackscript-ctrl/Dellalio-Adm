@@ -35,6 +35,7 @@ dependencies:
   local_notifier: ^0.1.6
   rxdart: ^0.28.0
   auto_updater: ^1.0.0
+  video_player: ^2.9.2
 
 
 flutter_launcher_icons:

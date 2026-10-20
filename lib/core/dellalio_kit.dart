@@ -76,6 +76,69 @@ class DellalioSubHeader extends StatelessWidget {
   }
 }
 
+/// Cabeçalho leve pra conteúdo trocado in-place (sem navegar de tela) —
+/// seta de voltar opcional + título + ação de salvar. Mais enxuto que
+/// [DellalioSubHeader], pensado pra painéis estreitos (ex.: coluna de
+/// edição ao lado de um preview fixo).
+class EditorInlineHeader extends StatelessWidget {
+  final String title;
+  final VoidCallback? onBack;
+  final bool saving;
+  final VoidCallback onSave;
+  const EditorInlineHeader({
+    super.key,
+    required this.title,
+    this.onBack,
+    required this.saving,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (onBack != null) ...[
+          DellalioIconGhostButton(
+            icon: Icons.arrow_back,
+            tooltip: 'Voltar',
+            size: 30,
+            onPressed: onBack!,
+          ),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Fraunces',
+              fontWeight: FontWeight.w500,
+              fontSize: 16,
+              color: dellalioTitle,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        saving
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: dellalioGold,
+                ),
+              )
+            : DellalioGhostButton(
+                label: "Salvar",
+                icon: Icons.save_outlined,
+                onPressed: onSave,
+              ),
+      ],
+    );
+  }
+}
+
 /// Campo de busca padrão — fundo charcoal, foco com contorno azul sutil.
 class DellalioSearchField extends StatefulWidget {
   final String hint;

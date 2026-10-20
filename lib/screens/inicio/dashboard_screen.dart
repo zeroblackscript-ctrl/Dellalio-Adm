@@ -8,6 +8,7 @@ import 'package:DELLALIO/screens/lembretes/lembretes_screen.dart';
 import 'package:DELLALIO/screens/login/meu_usuario_screen.dart';
 import 'package:DELLALIO/screens/mensagens/mensagens.dart';
 import 'package:DELLALIO/screens/orcamentos/menageorcamentos.dart';
+import 'package:DELLALIO/screens/site/site_content_screen.dart';
 import 'package:DELLALIO/screens/tarefas/tarefas_screen.dart';
 import 'package:auto_updater/auto_updater.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -50,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _NavEntry(Icons.task_alt_outlined, "Tarefas", 6),
     _NavEntry(Icons.calendar_today_outlined, "Agenda", 7),
     _NavEntry(Icons.work_outline, "Orçamentos", 8),
+    _NavEntry(Icons.storefront_outlined, "App Clientes", 9),
   ];
 
   @override
@@ -64,6 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       TarefasAdminScreen(),
       AgendaScreen(),
       ManageOrcamentosListScreen(),
+      SiteContentScreen(),
       ProfileScreen(),
     ];
 
@@ -185,7 +188,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         Expanded(
                           child: _buildSidebarItem(
-                            const _NavEntry(Icons.person_outline, "Perfil", 9),
+                            const _NavEntry(
+                              Icons.person_outline,
+                              "Perfil",
+                              10,
+                            ),
                           ),
                         ),
                         Expanded(
@@ -252,7 +259,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.zero,
               ),
-              leading: entry.index == 9
+              leading: entry.index == 10
                   ? _buildProfileAvatar(isActive)
                   : Icon(
                       entry.icon,
