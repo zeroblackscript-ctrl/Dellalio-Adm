@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,20 +13,37 @@ import '../models/models.dart';
 
 const List<FontFeature> numerosTabulares = [FontFeature.tabularFigures()];
 
+/// Desligado só na prévia das telas (testes), onde a Fraunces é carregada
+/// de arquivo local em vez de baixada.
+bool usarGoogleFonts = true;
+
 /// Fraunces pra títulos e números de destaque.
 TextStyle fraunces(
   double tamanho, {
   Color? cor,
   FontWeight peso = FontWeight.w500,
   double? altura,
-}) => GoogleFonts.fraunces(
-  fontSize: tamanho,
-  fontWeight: peso,
-  color: cor ?? dellalioTitle,
-  height: altura,
-  letterSpacing: -0.01 * tamanho,
-  fontFeatures: numerosTabulares,
-);
+}) {
+  final estilo = TextStyle(
+    fontSize: tamanho,
+    fontWeight: peso,
+    color: cor ?? dellalioTitle,
+    height: altura,
+    letterSpacing: -0.01 * tamanho,
+    fontFeatures: numerosTabulares,
+  );
+  return usarGoogleFonts
+      ? GoogleFonts.fraunces(textStyle: estilo)
+      : estilo.copyWith(fontFamily: 'Fraunces');
+}
+
+/// Texto de UI herdando a fonte do tema (Inter). Usar onde o widget troca o
+/// estilo inteiro em vez de mesclar (ex.: `DropdownButton.style`).
+TextStyle textoUi(BuildContext context, {double tamanho = 13.5, Color? cor}) =>
+    (Theme.of(context).textTheme.bodyMedium ?? const TextStyle()).copyWith(
+      fontSize: tamanho,
+      color: cor ?? panelIvory,
+    );
 
 bool semAnimacao(BuildContext context) =>
     MediaQuery.maybeDisableAnimationsOf(context) ?? false;
@@ -124,7 +143,10 @@ class BarraSituacao extends StatelessWidget {
     final barra = Row(
       children: [
         for (final p in partes)
-          Expanded(flex: p.$1, child: Container(color: p.$2)),
+          Expanded(
+            flex: p.$1,
+            child: Container(color: p.$2),
+          ),
       ],
     );
     return ClipRRect(
@@ -352,6 +374,10 @@ class BotaoEstoque extends StatefulWidget {
   final bool carregando;
   final bool larguraTotal;
 
+  /// Ação disponível mas fora de hora (ex.: cortar lista que ainda espera
+  /// compra): aparece apagada, continua clicável.
+  final bool esmaecido;
+
   const BotaoEstoque({
     super.key,
     required this.rotulo,
@@ -361,6 +387,7 @@ class BotaoEstoque extends StatefulWidget {
     this.pequeno = false,
     this.carregando = false,
     this.larguraTotal = false,
+    this.esmaecido = false,
   });
 
   @override
@@ -374,14 +401,18 @@ class _BotaoEstoqueState extends State<BotaoEstoque> {
   Widget build(BuildContext context) {
     final ativo = widget.onPressed != null && !widget.carregando;
     final (fundo, texto, borda) = switch (widget.variante) {
-      VarianteBotao.principal => (acaoPrincipal, acaoPrincipalTexto, acaoPrincipal),
+      VarianteBotao.principal => (
+        acaoPrincipal,
+        acaoPrincipalTexto,
+        acaoPrincipal,
+      ),
       VarianteBotao.whatsapp => (whatsappVerde, Colors.white, whatsappVerde),
       VarianteBotao.secundario => (inkSurface2, panelIvory, hairlineNavy),
       VarianteBotao.fantasma => (Colors.transparent, panelIvory, hairlineNavy),
     };
     final altura = widget.pequeno ? 32.0 : 40.0;
     return Opacity(
-      opacity: ativo ? 1 : 0.45,
+      opacity: ativo && !widget.esmaecido ? 1 : 0.45,
       child: MouseRegion(
         cursor: ativo ? SystemMouseCursors.click : SystemMouseCursors.basic,
         onEnter: (_) => setState(() => _hover = true),
@@ -406,7 +437,8 @@ class _BotaoEstoqueState extends State<BotaoEstoque> {
                   : fundo,
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: _hover &&
+                color:
+                    _hover &&
                         ativo &&
                         (widget.variante == VarianteBotao.secundario ||
                             widget.variante == VarianteBotao.fantasma)
@@ -424,7 +456,10 @@ class _BotaoEstoqueState extends State<BotaoEstoque> {
                   SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: texto),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: texto,
+                    ),
                   )
                 else if (widget.icone != null)
                   Icon(widget.icone, size: 16, color: texto),
@@ -703,50 +738,61 @@ class KpiColuna extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+        // Borda com cores diferentes não aceita raio no Flutter: o filete é
+        // uma faixa própria dentro do cartão recortado.
         child: Container(
           height: 178,
+          clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: inkSurface,
             borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(14),
             ),
-            border: Border(
-              top: BorderSide(color: filete, width: 3),
-              left: BorderSide(color: hairlineNavy),
-              right: BorderSide(color: hairlineNavy),
-              bottom: BorderSide(color: hairlineNavy),
-            ),
+            border: Border.all(color: hairlineNavy),
           ),
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              RotuloCaixaAlta(rotulo),
-              valor,
-              Container(
-                padding: const EdgeInsets.only(top: 10),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: hairlineNavy)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        rodapeEsquerda,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12.5, color: panelSlateDim),
+              Container(height: 3, color: filete),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 15, 18, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      RotuloCaixaAlta(rotulo),
+                      valor,
+                      Container(
+                        padding: const EdgeInsets.only(top: 10),
+                        decoration: BoxDecoration(
+                          border: Border(top: BorderSide(color: hairlineNavy)),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                rodapeEsquerda,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  color: panelSlateDim,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              rodapeDireita,
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: corRodapeDireita ?? panelSlateDim,
+                                fontFeatures: numerosTabulares,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      rodapeDireita,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: corRodapeDireita ?? panelSlateDim,
-                        fontFeatures: numerosTabulares,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -790,7 +836,10 @@ class StepperCompacto extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          botao('−', () => onChanged((valor - passo).clamp(0, double.infinity))),
+          botao(
+            '−',
+            () => onChanged((valor - passo).clamp(0, double.infinity)),
+          ),
           Container(
             color: inkSurface2,
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
@@ -809,6 +858,326 @@ class StepperCompacto extends StatelessWidget {
     );
   }
 }
+
+/// Borda tracejada (item a confirmar, card "Sem fornecedor", área de soltar).
+class BordaTracejada extends StatelessWidget {
+  final Widget child;
+  final Color cor;
+  final double raio;
+  final Color? fundo;
+  const BordaTracejada({
+    super.key,
+    required this.child,
+    required this.cor,
+    this.raio = 12,
+    this.fundo,
+  });
+
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(painter: _Tracejado(cor, raio, fundo), child: child);
+}
+
+class _Tracejado extends CustomPainter {
+  final Color cor;
+  final double raio;
+  final Color? fundo;
+  _Tracejado(this.cor, this.raio, this.fundo);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rr = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(raio),
+    );
+    if (fundo != null) canvas.drawRRect(rr, Paint()..color = fundo!);
+    final p = Paint()
+      ..color = cor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    for (final m in (Path()..addRRect(rr.deflate(0.5))).computeMetrics()) {
+      for (double d = 0; d < m.length; d += 9) {
+        canvas.drawPath(m.extractPath(d, d + 5), p);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_Tracejado old) => old.cor != cor || old.fundo != fundo;
+}
+
+/// Título de página (Fraunces 34) + subtítulo + ferramentas à direita.
+class CabecalhoPagina extends StatelessWidget {
+  final String titulo;
+  final String? subtitulo;
+  final List<Widget> acoes;
+  final Widget? antes;
+  const CabecalhoPagina({
+    super.key,
+    required this.titulo,
+    this.subtitulo,
+    this.acoes = const [],
+    this.antes,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (antes != null) ...[antes!, const SizedBox(width: 14)],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                titulo,
+                style: fraunces(34),
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (subtitulo != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitulo!,
+                  style: TextStyle(color: panelSlate, fontSize: 14),
+                ),
+              ],
+            ],
+          ),
+        ),
+        for (final (i, a) in acoes.indexed) ...[
+          if (i > 0) const SizedBox(width: 10),
+          a,
+        ],
+      ],
+    );
+  }
+}
+
+/// Item da linha do tempo do histórico: bolinha colorida, "Tipo · para
+/// quem", quantidade com sinal e "origem · responsável · data".
+class ItemLinhaTempo extends StatelessWidget {
+  final Color cor;
+  final String titulo;
+  final String quantidade;
+  final String detalhe;
+  final bool ultimo;
+  final bool tituloColorido;
+  const ItemLinhaTempo({
+    super.key,
+    required this.cor,
+    required this.titulo,
+    required this.quantidade,
+    required this.detalhe,
+    this.ultimo = false,
+    this.tituloColorido = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 22,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                if (!ultimo)
+                  Positioned(
+                    top: 14,
+                    bottom: 0,
+                    child: Container(width: 2, color: hairlineNavy),
+                  ),
+                Positioned(
+                  top: 9,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: cor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(color: inkSurface, spreadRadius: 3),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6, bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          titulo,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: tituloColorido ? cor : panelIvory,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        quantidade,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: panelIvory,
+                          fontFeatures: numerosTabulares,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    detalhe,
+                    style: TextStyle(color: panelSlateDim, fontSize: 12.5),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Vários streams ao vivo de uma vez. [builder] recebe o último valor de
+/// cada um (null até chegar) e só é chamado depois que todos chegaram, a
+/// não ser que [parcial] seja true.
+class Vivos extends StatefulWidget {
+  final List<Stream<Object?>> streams;
+  final Widget Function(BuildContext context, List<Object?> valores) builder;
+  final bool parcial;
+  const Vivos({
+    super.key,
+    required this.streams,
+    required this.builder,
+    this.parcial = false,
+  });
+
+  @override
+  State<Vivos> createState() => _VivosState();
+}
+
+class _VivosState extends State<Vivos> {
+  late List<Object?> _valores;
+  late List<bool> _chegou;
+  final List<StreamSubscription<Object?>> _subs = [];
+  Object? _erro;
+
+  @override
+  void initState() {
+    super.initState();
+    _assinar();
+  }
+
+  void _assinar() {
+    _valores = List.filled(widget.streams.length, null);
+    _chegou = List.filled(widget.streams.length, false);
+    for (final (i, s) in widget.streams.indexed) {
+      _subs.add(
+        s.listen(
+          (v) {
+            if (!mounted) return;
+            setState(() {
+              _valores[i] = v;
+              _chegou[i] = true;
+            });
+          },
+          onError: (Object e) {
+            if (mounted) setState(() => _erro = e);
+          },
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_erro != null) return ErroConsulta(_erro!);
+    if (!widget.parcial && _chegou.contains(false)) return const Carregando();
+    return widget.builder(context, _valores);
+  }
+}
+
+/// Carregando padrão das telas.
+class Carregando extends StatelessWidget {
+  const Carregando({super.key});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(40),
+    child: Center(
+      child: CircularProgressIndicator(color: estoqueOuro, strokeWidth: 2),
+    ),
+  );
+}
+
+/// Erro de consulta (índice faltando, sem rede): mostra, não derruba.
+class ErroConsulta extends StatelessWidget {
+  final Object erro;
+  const ErroConsulta(this.erro, {super.key});
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(20),
+    child: Text(
+      'Não consegui carregar: $erro',
+      style: TextStyle(color: estoqueFalta, fontSize: 13),
+    ),
+  );
+}
+
+/// Diálogo de confirmação no visual do estoque. Devolve `true` no Sim.
+Future<bool?> perguntar(
+  BuildContext context, {
+  required String titulo,
+  required String texto,
+  String sim = 'Confirmar',
+  String nao = 'Cancelar',
+  bool perigo = false,
+}) => showDialog<bool>(
+  context: context,
+  builder: (ctx) => AlertDialog(
+    backgroundColor: inkSurface,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+      side: BorderSide(color: hairlineNavy),
+    ),
+    title: Text(titulo, style: fraunces(22)),
+    content: Text(texto, style: TextStyle(color: panelSlate, height: 1.4)),
+    actions: [
+      BotaoEstoque(
+        rotulo: nao,
+        variante: VarianteBotao.fantasma,
+        onPressed: () => Navigator.pop(ctx, false),
+      ),
+      BotaoEstoque(
+        rotulo: sim,
+        variante: VarianteBotao.principal,
+        icone: perigo ? Icons.warning_amber_rounded : Icons.check,
+        onPressed: () => Navigator.pop(ctx, true),
+      ),
+    ],
+  ),
+);
 
 /// Mensagem curta no rodapé da janela.
 void avisar(BuildContext context, String texto, {bool erro = false}) {

@@ -15,12 +15,31 @@ import '../services/consultas.dart';
 import '../services/migracao.dart';
 import '../services/responsavel.dart';
 import '../ui/kit_estoque.dart';
+import '../services/cadastro_service.dart';
+import 'configuracoes_tela.dart';
+import 'listas_tela.dart';
+import 'materiais_tela.dart';
+import 'movimentacoes_tela.dart';
 import 'nav_cerebro.dart';
+import 'pedidos_tela.dart';
+import 'visao_geral.dart';
 
 /// Casca do Cérebro: barra lateral com as 5 seções + configurações e o
 /// usuário no rodapé.
 class CerebroShell extends StatefulWidget {
-  const CerebroShell({super.key});
+  const CerebroShell({
+    super.key,
+    this.iniciarAutomacao = true,
+    this.secaoInicial,
+    this.listaInicial,
+    this.materialInicial,
+  });
+
+  /// Falso só na prévia das telas (sem Firebase, sem pastas).
+  final bool iniciarAutomacao;
+  final SecaoCerebro? secaoInicial;
+  final String? listaInicial;
+  final String? materialInicial;
 
   @override
   State<CerebroShell> createState() => _CerebroShellState();
@@ -33,8 +52,12 @@ class _CerebroShellState extends State<CerebroShell> {
   @override
   void initState() {
     super.initState();
+    if (widget.secaoInicial != null) _nav.secao = widget.secaoInicial!;
+    _nav.preparar(listaId: widget.listaInicial, materialId: widget.materialInicial);
+    if (!widget.iniciarAutomacao) return;
     // Converte o estoque antigo uma única vez (flag em config/migracoes),
     // depois começa a vigiar as pastas.
+    CadastroService.instancia.carregarConfig();
     migrarEstoqueAntigo()
         .catchError((_) => 0)
         .whenComplete(Automacao.instancia.iniciar);
@@ -63,8 +86,19 @@ class _CerebroShellState extends State<CerebroShell> {
     }
   }
 
+  void _tema() => setState(() {});
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    ThemeNotifier.instance
+      ..removeListener(_tema)
+      ..addListener(_tema);
+  }
+
   @override
   void dispose() {
+    ThemeNotifier.instance.removeListener(_tema);
     _nav.dispose();
     super.dispose();
   }
@@ -80,8 +114,16 @@ class _CerebroShellState extends State<CerebroShell> {
           onDragExited: (_) => setState(() => _arrastando = false),
           onDragDone: _soltou,
           child: Stack(
+            // Sem isso o Row recebe altura frouxa e centraliza páginas curtas.
+            fit: StackFit.expand,
             children: [
-              Row(
+              // As cores são getters do modo atual: ao trocar o tema, refaz
+              // tudo (a navegação fica no _nav, fora desta subárvore).
+              Builder(
+                builder: (context) => Row(
+                key: ValueKey(ThemeNotifier.instance.mode),
+                // Página sempre com a altura toda (senão as curtas centralizam).
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const _BarraLateral(),
                   Expanded(
@@ -95,6 +137,7 @@ class _CerebroShellState extends State<CerebroShell> {
                   ),
                 ],
               ),
+              ),
               if (_arrastando) const _SoltarAqui(),
             ],
           ),
@@ -103,7 +146,14 @@ class _CerebroShellState extends State<CerebroShell> {
     );
   }
 
-  Widget _pagina(SecaoCerebro s) => _PaginaProvisoria(secao: s);
+  Widget _pagina(SecaoCerebro s) => switch (s) {
+    SecaoCerebro.visaoGeral => const VisaoGeralTela(),
+    SecaoCerebro.materiais => const MateriaisTela(),
+    SecaoCerebro.movimentacoes => const MovimentacoesTela(),
+    SecaoCerebro.listas => const ListasTela(),
+    SecaoCerebro.pedidos => const PedidosTela(),
+    SecaoCerebro.configuracoes => const ConfiguracoesTela(),
+  };
 }
 
 /// Véu que aparece ao arrastar um arquivo sobre a janela.
@@ -139,26 +189,6 @@ class _SoltarAqui extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _PaginaProvisoria extends StatelessWidget {
-  final SecaoCerebro secao;
-  const _PaginaProvisoria({required this.secao});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(34, 26, 34, 26),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(secao.rotulo, style: fraunces(34)),
-          const SizedBox(height: 8),
-          Text('Em construção.', style: TextStyle(color: panelSlate)),
-        ],
       ),
     );
   }

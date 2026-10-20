@@ -93,6 +93,9 @@ Color get estoqueNeutro =>
 /// Dourado de destaque: no claro escurece pra ler sobre papel.
 Color get estoqueOuro => _dark ? dellalioGold : const Color(0xFFA9861A);
 
+/// Filete/realce neutro dos KPIs: dourado no escuro, navy no claro.
+Color get destaqueNeutro => _dark ? dellalioGold : petroleoColor;
+
 /// Verde do botão "Enviar no WhatsApp" (igual nos dois modos).
 const Color whatsappVerde = Color(0xFF1F8F5A);
 

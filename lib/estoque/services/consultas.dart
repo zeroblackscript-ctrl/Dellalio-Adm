@@ -8,7 +8,8 @@ class Consultas {
   Consultas({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
   final FirebaseFirestore _db;
 
-  static final Consultas instancia = Consultas();
+  /// Trocável nos testes/prévia (Firestore falso).
+  static Consultas instancia = Consultas();
 
   Stream<List<MaterialEstoque>> materiais({bool incluirInativos = false}) =>
       _db.collection('materiais').snapshots().map((s) {
@@ -85,6 +86,31 @@ class Consultas {
       .snapshots()
       .map((s) => s.docs.map(Fornecedor.fromFirestore).toList()
         ..sort((a, b) => a.nome.toLowerCase().compareTo(b.nome.toLowerCase())));
+
+  /// Notas com item esperando confirmação (embalagem, "É X?").
+  Stream<List<NotaFiscal>> notasPendentes() => _db
+      .collection('notas_fiscais')
+      .where('status', isEqualTo: StatusNota.parcial.name)
+      .snapshots()
+      .map((s) => s.docs
+          .map(NotaFiscal.fromFirestore)
+          .where((n) => n.itens.any((i) => i.situacao == SituacaoItemNota.confirmar))
+          .toList());
+
+  Stream<NotaFiscal?> nota(String id) => _db
+      .collection('notas_fiscais')
+      .doc(id)
+      .snapshots()
+      .map((d) => d.exists ? NotaFiscal.fromFirestore(d) : null);
+
+  /// Movimentações a partir de [desde] (mais novas primeiro).
+  Stream<List<Movimentacao>> movimentacoesDesde(DateTime desde, {int limite = 2000}) => _db
+      .collection('movimentacoes')
+      .where('criadoEm', isGreaterThanOrEqualTo: Timestamp.fromDate(desde))
+      .orderBy('criadoEm', descending: true)
+      .limit(limite)
+      .snapshots()
+      .map((s) => s.docs.map(Movimentacao.fromFirestore).toList());
 
   Stream<int> avisosNaoLidos() => _db
       .collection('avisos')

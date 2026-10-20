@@ -105,7 +105,8 @@ enum SoftwareLista {
 
 enum StatusLista {
   lida('Lida'),
-  reservada('Reservada'),
+  // Tudo reservado na chegada: pra quem usa, é o mesmo que "pronta".
+  reservada('Pronta'),
   aguardandoCompra('Aguardando compra'),
   pronta('Pronta'),
   cortada('Cortada'),

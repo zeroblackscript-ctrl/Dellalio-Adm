@@ -56,6 +56,12 @@ class NavCerebro extends ChangeNotifier {
 
   void abrirLista(String id) => ir(SecaoCerebro.listas, listaId: id);
 
+  /// Estado inicial sem notificar (antes do primeiro build).
+  void preparar({String? listaId, String? materialId}) {
+    this.listaId = listaId;
+    this.materialId = materialId;
+  }
+
   void fecharLista() {
     listaId = null;
     notifyListeners();

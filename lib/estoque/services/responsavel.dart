@@ -11,9 +11,13 @@ class Responsavel {
 
   static Responsavel? _cache;
 
+  /// Testes e prévia das telas (sem Firebase Auth).
+  static Responsavel? fixoParaTeste;
+
   /// Usuário logado, com o nome do perfil (`users` dos admins ou
   /// `funcionarios` da equipe). Cai no e-mail se não houver perfil.
   static Future<Responsavel> atual({FirebaseFirestore? db}) async {
+    if (fixoParaTeste != null) return fixoParaTeste!;
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return sistema;
     final cache = _cache;

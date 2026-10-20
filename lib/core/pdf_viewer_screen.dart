@@ -3,18 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
-import '../../core/dellalio_kit.dart';
-import '../../core/theme.dart';
+import 'dellalio_kit.dart';
+import 'theme.dart';
 
+/// Visualizador de PDF inline (com imprimir/compartilhar). Abre pela [url]
+/// ou por um [carregar] (ex.: arquivo local da pasta vigiada).
 class PdfViewerScreen extends StatefulWidget {
-  final String url;
+  final String? url;
+  final Future<Uint8List> Function()? carregar;
   final String titulo;
 
   const PdfViewerScreen({
     super.key,
-    required this.url,
+    this.url,
+    this.carregar,
     required this.titulo,
-  });
+  }) : assert(url != null || carregar != null);
 
   @override
   State<PdfViewerScreen> createState() => _PdfViewerScreenState();
@@ -22,7 +26,8 @@ class PdfViewerScreen extends StatefulWidget {
 
 class _PdfViewerScreenState extends State<PdfViewerScreen> {
   Future<Uint8List> _baixarBytes() async {
-    final resposta = await http.get(Uri.parse(widget.url));
+    if (widget.carregar != null) return widget.carregar!();
+    final resposta = await http.get(Uri.parse(widget.url!));
     if (resposta.statusCode != 200) {
       throw Exception('Não foi possível carregar o documento.');
     }
@@ -41,7 +46,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 700),
+                    constraints: const BoxConstraints(maxWidth: 900),
                     child: PdfPreview(
                       build: (format) => _baixarBytes(),
                       canChangePageFormat: false,
