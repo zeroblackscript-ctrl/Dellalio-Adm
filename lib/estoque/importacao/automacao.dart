@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import '../notas/fonte_fotos.dart';
 import '../notas/fonte_notas.dart';
 import '../notas/importador_notas.dart';
 import 'importador_listas.dart';
@@ -34,6 +35,10 @@ class Automacao {
   final FontePasta fonteNotas = FontePasta();
   StreamSubscription<ArquivoNota>? _subNotas;
 
+  /// Fotos de DANFE vindas do celular (Gerenciador).
+  final FonteFotosCelular fonteFotos = FonteFotosCelular();
+  StreamSubscription<ArquivoNota>? _subFotos;
+
   Future<void> _fila = Future.value();
   bool _iniciada = false;
 
@@ -45,14 +50,22 @@ class Automacao {
         () => ImportadorNotas.instancia.importarBytes(a.nome, a.bytes),
       ).catchError((_) => null),
     );
+    _subFotos = fonteFotos.arquivos.listen(
+      (a) => _enfileirar(() => ImportadorNotas.instancia.importarBytes(a.nome, a.bytes))
+          .then((id) => fonteFotos.concluir(a.nome, notaId: id))
+          .catchError((Object e) => fonteFotos.concluir(a.nome, erro: e)),
+    );
     await vigiaListas.iniciar();
     await fonteNotas.iniciar();
+    await fonteFotos.iniciar();
   }
 
   Future<void> parar() async {
     await vigiaListas.parar();
     await fonteNotas.parar();
+    await fonteFotos.parar();
     await _subNotas?.cancel();
+    await _subFotos?.cancel();
     _iniciada = false;
   }
 
