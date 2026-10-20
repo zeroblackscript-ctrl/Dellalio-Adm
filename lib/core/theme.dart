@@ -76,6 +76,45 @@ const Color statusFinalizado = Color(0xFF9B4F63);
 /// de cliente (ex: badge "todos" em Tarefas).
 const Color panelViolet = statusConferencia;
 
+/// ============================================================
+/// ESTOQUE — status semânticos e superfícies do Cérebro.
+/// verde = tem tudo, âmbar = parcial/comprar, vermelho = falta,
+/// dourado = ação/destaque. No claro os tons escurecem pra manter
+/// contraste em fundo papel (sem reaproveitar os do escuro).
+/// ============================================================
+Color get estoqueOk => _dark ? const Color(0xFF3FB37F) : const Color(0xFF22805A);
+Color get estoqueAlerta =>
+    _dark ? const Color(0xFFE3A33B) : const Color(0xFFA9690A);
+Color get estoqueFalta =>
+    _dark ? const Color(0xFFE5604F) : const Color(0xFFC2452F);
+Color get estoqueNeutro =>
+    _dark ? const Color(0xFF77736B) : const Color(0xFF7E8592);
+
+/// Dourado de destaque: no claro escurece pra ler sobre papel.
+Color get estoqueOuro => _dark ? dellalioGold : const Color(0xFFA9861A);
+
+/// Verde do botão "Enviar no WhatsApp" (igual nos dois modos).
+const Color whatsappVerde = Color(0xFF1F8F5A);
+
+/// Superfície um tom acima do cartão (mini-cards dentro de painéis,
+/// trilho de barras, campos do stepper).
+Color get inkSurface2 =>
+    _dark ? const Color(0xFF242329) : const Color(0xFFF3F0EA);
+Color get inkSurface3 =>
+    _dark ? const Color(0xFF2E2D33) : const Color(0xFFE9E4DA);
+
+/// Barra lateral do Cérebro: carvão no escuro, navy no claro.
+Color get sidebarFundo => _dark ? const Color(0xFF141416) : petroleoColor;
+Color get sidebarTexto => _dark ? panelSlate : const Color(0xFFB9C1CF);
+Color get sidebarAtivo => _dark ? dellalioGold : const Color(0xFFE2C25A);
+Color get sidebarLinha => _dark ? hairline : const Color(0xFF24344F);
+Color get sidebarNome => _dark ? panelIvory : Colors.white;
+
+/// Ação principal: dourado no escuro, navy no claro (com texto claro).
+Color get acaoPrincipal => _dark ? dellalioGold : petroleoColor;
+Color get acaoPrincipalTexto =>
+    _dark ? const Color(0xFF1B1503) : Colors.white;
+
 /// Singleton que notifica os ouvintes quando o tema é alternado.
 class ThemeNotifier extends ChangeNotifier {
   ThemeNotifier._();

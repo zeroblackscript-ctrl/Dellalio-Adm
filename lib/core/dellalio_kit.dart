@@ -28,7 +28,7 @@ class DellalioPageHeader extends StatelessWidget {
             ),
           ),
         ),
-        if (trailing != null) trailing!,
+        ?trailing,
       ],
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0);
   }
@@ -69,7 +69,7 @@ class DellalioSubHeader extends StatelessWidget {
               ),
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.05, end: 0);

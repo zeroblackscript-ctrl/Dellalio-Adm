@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Regras do estoque Dellalio.
+//
+// ATENÇÃO antes de publicar (`firebase deploy --only firestore:rules`):
+// o mesmo projeto Firebase atende o app de clientes e o app dos
+// funcionários. Compare com as regras que estão no console hoje e junte
+// o que for específico deles; publicar este arquivo substitui tudo.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    // Histórico imutável: cria, nunca edita nem apaga.
+    match /movimentacoes/{id} {
+      allow create: if autenticado();
+    }
+
+    // Demais coleções: usuário autenticado lê e escreve. A exceção de
+    // `movimentacoes` precisa ficar aqui também, porque regras se somam
+    // (qualquer `allow` que case libera).
+    match /{colecao}/{documento=**} {
+      allow read: if autenticado();
+      allow write: if autenticado() && colecao != 'movimentacoes';
+    }
+  }
+}

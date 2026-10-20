@@ -39,15 +39,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (_user == null) return;
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(_user!.uid).get();
+      final doc = await FirebaseFirestore.instance.collection('users').doc(_user.uid).get();
       if (doc.exists) {
         final data = doc.data()!;
-        _emailController.text = _user!.email ?? '';
+        _emailController.text = _user.email ?? '';
         _nomeController.text = data['nome'] ?? '';
         _sobrenomeController.text = data['sobrenome'] ?? '';
         _telefoneController.text = data['telefone'] ?? '';
         _enderecoController.text = data['endereco'] ?? '';
-        _photoUrl = _user!.photoURL;
+        _photoUrl = _user.photoURL;
       }
     } catch (e) {
       debugPrint("Erro ao carregar dados: $e");
@@ -66,7 +66,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final ref = FirebaseStorage.instance.ref().child('user_photos').child('${_user!.uid}.jpg');
       await ref.putFile(File(image.path));
       final downloadUrl = await ref.getDownloadURL();
-      await _user!.updatePhotoURL(downloadUrl);
+      await _user.updatePhotoURL(downloadUrl);
       setState(() => _photoUrl = downloadUrl);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Foto atualizada!")));
     } catch (e) {
@@ -107,8 +107,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (wantsPasswordChange) {
         try {
           final cred = EmailAuthProvider.credential(email: _user!.email!, password: _oldPassController.text);
-          await _user!.reauthenticateWithCredential(cred);
-          await _user!.updatePassword(_passController.text);
+          await _user.reauthenticateWithCredential(cred);
+          await _user.updatePassword(_passController.text);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Senha alterada com sucesso!"), backgroundColor: Colors.green),
@@ -142,11 +142,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       // Auth Update - E-mail
       if (_emailController.text != _user!.email) {
-        await _user!.verifyBeforeUpdateEmail(_emailController.text);
+        await _user.verifyBeforeUpdateEmail(_emailController.text);
       }
 
       // Firestore Update
-      await FirebaseFirestore.instance.collection('users').doc(_user!.uid).update({
+      await FirebaseFirestore.instance.collection('users').doc(_user.uid).update({
         'fotoUrl': _photoUrl,
         'nome': _nomeController.text,
         'sobrenome': _sobrenomeController.text,

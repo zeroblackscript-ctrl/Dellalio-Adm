@@ -4,8 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:auto_updater/auto_updater.dart';
+import 'estoque/telas/cerebro_shell.dart';
 import 'screens/login/login_screen.dart';
-import 'screens/inicio/dashboard_screen.dart';
 import 'core/user_session.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';
@@ -91,7 +91,7 @@ class _DellalioCerebroAppState extends State<DellalioCerebroApp> {
 
 /// Verifica se já existe uma sessão do Firebase Auth ativa ao abrir o app.
 /// Se sim, restaura o status de Admin salvo localmente e vai direto para o
-/// Dashboard, evitando pedir login novamente a cada abertura do app.
+/// estoque, evitando pedir login novamente a cada abertura do app.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -99,7 +99,7 @@ class AuthGate extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       await UserSession.loadPersistedAdminStatus();
-      return const DashboardScreen();
+      return const CerebroShell();
     }
     return const LoginScreen();
   }
