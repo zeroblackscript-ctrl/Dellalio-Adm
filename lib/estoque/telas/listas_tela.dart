@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/pdf_viewer_screen.dart';
 import '../../core/theme.dart';
 import '../../core/user_session.dart';
 import '../importacao/automacao.dart';
@@ -307,20 +306,11 @@ class _Conferencia extends StatelessWidget {
   bool get _cortavel => lista.status == StatusLista.pronta || lista.status == StatusLista.reservada;
   bool get _encerrada => lista.status == StatusLista.cortada || lista.status == StatusLista.cancelada;
 
+  /// Abre o arquivo original no programa padrão do Windows (PDF, planilha).
+  /// Visualizador dentro do app foi descartado: travava o sistema.
   Future<void> _verArquivo(BuildContext context) async {
     final caminho = lista.arquivoCaminho;
     final local = caminho != null && File(caminho).existsSync();
-    if (lista.arquivoNome.toLowerCase().endsWith('.pdf') && (local || lista.arquivoUrl != null)) {
-      await Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PdfViewerScreen(
-          titulo: lista.arquivoNome,
-          url: local ? null : lista.arquivoUrl,
-          carregar: local ? () => File(caminho).readAsBytes() : null,
-        ),
-      ));
-      return;
-    }
-    // Planilha: abre no programa padrão do Windows.
     final uri = local ? Uri.file(caminho) : (lista.arquivoUrl == null ? null : Uri.parse(lista.arquivoUrl!));
     if (uri == null || !await launchUrl(uri)) {
       if (context.mounted) avisar(context, 'O arquivo original não está nesta máquina.', erro: true);
