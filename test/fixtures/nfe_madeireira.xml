@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NF-e fictícia para testes (3 itens). Chave e CNPJ inventados. -->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+  <NFe>
+    <infNFe Id="NFe35261012345678000190550010000482131000482130" versao="4.00">
+      <ide>
+        <cUF>35</cUF>
+        <natOp>VENDA DE MERCADORIA</natOp>
+        <mod>55</mod>
+        <serie>1</serie>
+        <nNF>48213</nNF>
+        <dhEmi>2026-10-19T14:32:00-03:00</dhEmi>
+      </ide>
+      <emit>
+        <CNPJ>12345678000190</CNPJ>
+        <xNome>MADEIREIRA CENTRAL LTDA</xNome>
+        <xFant>Madeireira Central</xFant>
+        <enderEmit>
+          <xLgr>Rua das Madeiras</xLgr>
+          <fone>18997124410</fone>
+        </enderEmit>
+      </emit>
+      <det nItem="1">
+        <prod>
+          <cProd>1052-18-LF</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>MDF LOURO FREIJO 18MM 2750X1850 2F</xProd>
+          <uCom>CH</uCom>
+          <qCom>5.0000</qCom>
+          <vUnCom>320.0000000000</vUnCom>
+        </prod>
+      </det>
+      <det nItem="2">
+        <prod>
+          <cProd>FB-22-BR</cProd>
+          <cEAN>7891234567895</cEAN>
+          <xProd>FITA DE BORDA BRANCA 22MM</xProd>
+          <uCom>M</uCom>
+          <qCom>100.0000</qCom>
+          <vUnCom>1.1000000000</vUnCom>
+        </prod>
+      </det>
+      <det nItem="3">
+        <prod>
+          <cProd>PAR-440</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>PARAFUSO 4X40 PHILIPS CX C/500</xProd>
+          <uCom>CX</uCom>
+          <qCom>2.0000</qCom>
+          <vUnCom>38.0000000000</vUnCom>
+        </prod>
+      </det>
+    </infNFe>
+  </NFe>
+</nfeProc>

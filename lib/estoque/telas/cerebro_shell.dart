@@ -43,16 +43,23 @@ class _CerebroShellState extends State<CerebroShell> {
   Future<void> _soltou(DropDoneDetails d) async {
     setState(() => _arrastando = false);
     for (final f in d.files) {
-      final arquivo = File(f.path);
-      if (!Automacao.instancia.vigiaListas.aceita(arquivo.path) &&
-          !f.path.toLowerCase().endsWith('.xml')) {
+      if (!Automacao.instancia.aceita(f.path)) {
         if (mounted) avisar(context, '${f.name}: formato não aceito.', erro: true);
         continue;
       }
       if (mounted) avisar(context, 'Lendo ${f.name}…');
-      final id = await Automacao.instancia.importarArquivo(arquivo);
+      final r = await Automacao.instancia.importarArquivo(File(f.path));
       if (!mounted) return;
-      avisar(context, id == null ? '${f.name} já tinha sido importado.' : '${f.name} importado.');
+      avisar(
+        context,
+        switch (r) {
+          TipoImportado.lista => '${f.name}: lista importada.',
+          TipoImportado.nota => '${f.name}: nota lançada no estoque.',
+          TipoImportado.repetido => '${f.name} já tinha sido importado.',
+          TipoImportado.falhou => 'Não consegui ler ${f.name}.',
+        },
+        erro: r == TipoImportado.falhou,
+      );
     }
   }
 
