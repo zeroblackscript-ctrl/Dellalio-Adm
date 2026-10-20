@@ -1,9 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:local_notifier/local_notifier.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:auto_updater/auto_updater.dart';
+import 'estoque/models/enums.dart';
+import 'estoque/services/aviso_service.dart';
+import 'estoque/services/pedido_service.dart';
 import 'estoque/telas/cerebro_shell.dart';
 import 'screens/login/login_screen.dart';
 import 'core/user_session.dart';
@@ -33,6 +39,20 @@ void main() async {
     await autoUpdater.setScheduledCheckInterval(21600);
   }
   // ------------------------------------
+
+  // Estoque: mínimo vira pedido em qualquer movimentação, e eventos de lista
+  // lida/pronta e nota lançada aparecem como notificação do Windows.
+  PedidoService.registrarOuvinteMinimo();
+  if (Platform.isWindows) {
+    await localNotifier.setup(appName: 'Dellalio Estoque');
+    AvisoService.notificarSO = (aviso) {
+      if (aviso.tipo == TipoAviso.listaLida ||
+          aviso.tipo == TipoAviso.listaPronta ||
+          aviso.tipo == TipoAviso.notaLancada) {
+        LocalNotification(title: 'Dellalio Estoque', body: aviso.texto).show();
+      }
+    };
+  }
 
   // Carrega a preferência de tema antes de iniciar o app
   await UserSession.loadDarkModePreference();

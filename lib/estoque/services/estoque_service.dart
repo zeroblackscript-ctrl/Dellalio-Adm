@@ -44,7 +44,8 @@ class EstoqueService {
   CollectionReference<Map<String, dynamic>> get _movs =>
       _db.collection('movimentacoes');
 
-  Future<Responsavel> _responsavel() async =>
+  /// Quem assina as movimentações deste serviço.
+  Future<Responsavel> responsavelAtual() async =>
       _responsavelFixo ?? await Responsavel.atual(db: _db);
 
   // ---------------------------------------------------------------- operações
@@ -239,7 +240,7 @@ class EstoqueService {
     String? notaFiscalId,
     String? pedidoId,
   }) async {
-    final resp = await _responsavel();
+    final resp = await responsavelAtual();
     final ref = _materiais.doc(materialId);
 
     final resultado = await _db.runTransaction<_Resultado>((tx) async {
