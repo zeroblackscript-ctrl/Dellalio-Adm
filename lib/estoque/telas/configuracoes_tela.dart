@@ -16,7 +16,7 @@ import '../util/quantidade.dart';
 import 'dialogos.dart';
 
 /// Versão do app (igual ao pubspec).
-const String kAppVersion = '1.4.8';
+const String kAppVersion = '2.0.0';
 
 class ConfiguracoesTela extends StatelessWidget {
   const ConfiguracoesTela({super.key});

@@ -10,7 +10,7 @@ import 'package:http/http.dart' as http;
 const String kModeloIA = 'gemini-3.5-flash';
 
 /// Região das Cloud Functions de IA (`functions/index.js`).
-const String kRegiaoFunctions = 'us-central1';
+const String kRegiaoFunctions = 'southamerica-east1';
 
 class IAIndisponivel implements Exception {
   final String motivo;

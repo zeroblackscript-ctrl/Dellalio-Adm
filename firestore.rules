@@ -1,29 +1,29 @@
 rules_version = '2';
 
-// Regras do estoque Dellalio.
+// Regras do Firestore do projeto Dellalio (Cérebro, Gerenciador e app de
+// clientes usam o mesmo banco).
 //
-// ATENÇÃO antes de publicar (`firebase deploy --only firestore:rules`):
-// o mesmo projeto Firebase atende o app de clientes e o app dos
-// funcionários. Compare com as regras que estão no console hoje e junte
-// o que for específico deles; publicar este arquivo substitui tudo.
+// Em 2026-10-20 as regras publicadas eram totalmente abertas
+// (`allow read, write: if true`). Esta versão mantém esse acesso para não
+// quebrar nenhum dos apps e só acrescenta o que o estoque exige: o histórico
+// de `movimentacoes` é imutável (cria, nunca edita nem apaga).
+//
+// PENDENTE (decisão do dono): fechar o banco para usuários autenticados.
+// Antes, conferir se o app de clientes lê algo antes do login (site_content,
+// vitrine) — se ler, essas coleções precisam continuar com leitura pública.
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function autenticado() {
-      return request.auth != null;
-    }
-
-    // Histórico imutável: cria, nunca edita nem apaga.
     match /movimentacoes/{id} {
-      allow create: if autenticado();
+      allow read: if true;
+      allow create: if request.auth != null;
     }
 
-    // Demais coleções: usuário autenticado lê e escreve. A exceção de
-    // `movimentacoes` precisa ficar aqui também, porque regras se somam
-    // (qualquer `allow` que case libera).
+    // Regras se somam (qualquer `allow` que case libera), então a exceção de
+    // `movimentacoes` precisa ficar aqui também.
     match /{colecao}/{documento=**} {
-      allow read: if autenticado();
-      allow write: if autenticado() && colecao != 'movimentacoes';
+      allow read: if true;
+      allow write: if colecao != 'movimentacoes';
     }
   }
 }

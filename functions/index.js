@@ -5,15 +5,17 @@
 // HTTPS, com o token do usuário. A chamada ao Gemini usa as credenciais do
 // próprio servidor (Vertex AI) — nenhuma chave de API no app.
 //
-// Deploy: `cd functions && npm install && firebase deploy --only functions`
-// (exige o plano Blaze e a API Vertex AI ativa no projeto).
+// Deploy: `cd functions && npm install && firebase deploy --only functions:estoque`
+// (plano Blaze e API Vertex AI ativa — já ativada em 2026-10-20).
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { GoogleGenAI, Type } = require("@google/genai");
 
-const REGIAO = "us-central1";
-// Mesmo valor de kModeloIA no app; o app pode mandar outro "gemini-*".
-const MODELO_PADRAO = "gemini-3.5-flash";
+// Mesma região das outras functions do projeto (e kRegiaoFunctions no app).
+const REGIAO = "southamerica-east1";
+// Ordem de preferência: o primeiro que existir no projeto é usado e fica
+// guardado. O app pode pedir outro "gemini-*" (kModeloIA), que entra na frente.
+const MODELOS = ["gemini-3.5-flash", "gemini-3-flash", "gemini-2.5-flash"];
 const LOCAL_VERTEX = "global";
 
 const opcoes = { region: REGIAO, timeoutSeconds: 150, memory: "1GiB" };
@@ -32,29 +34,48 @@ function ia() {
 
 function modeloDe(dados) {
   const m = dados && dados.modelo;
-  return typeof m === "string" && /^gemini-[\w.\-]+$/.test(m) ? m : MODELO_PADRAO;
+  return typeof m === "string" && /^gemini-[\w.\-]+$/.test(m) ? m : null;
 }
 
 function exigirLogin(req) {
   if (!req.auth) throw new HttpsError("unauthenticated", "Faça login.");
 }
 
+let modeloQueFunciona = null;
+
+function modeloInexistente(e) {
+  const t = `${e && (e.status || e.code || "")} ${e && e.message}`;
+  return /404|NOT_FOUND|not found|does not exist|is not supported/i.test(t);
+}
+
 async function gerarJson({ modelo, sistema, partes, schema }) {
-  const resp = await ia().models.generateContent({
-    model: modelo,
-    contents: [{ role: "user", parts: partes }],
-    config: {
-      systemInstruction: sistema,
-      responseMimeType: "application/json",
-      responseSchema: schema,
-      temperature: 0,
-    },
-  });
-  try {
-    return JSON.parse(resp.text);
-  } catch (e) {
-    throw new HttpsError("internal", "A IA não devolveu JSON válido.");
+  const ordem = [...new Set([modeloQueFunciona, modelo, ...MODELOS].filter(Boolean))];
+  let ultimo;
+  for (const m of ordem) {
+    try {
+      const resp = await ia().models.generateContent({
+        model: m,
+        contents: [{ role: "user", parts: partes }],
+        config: {
+          systemInstruction: sistema,
+          responseMimeType: "application/json",
+          responseSchema: schema,
+          temperature: 0,
+        },
+      });
+      modeloQueFunciona = m;
+      try {
+        return JSON.parse(resp.text);
+      } catch (e) {
+        throw new HttpsError("internal", "A IA não devolveu JSON válido.");
+      }
+    } catch (e) {
+      if (e instanceof HttpsError || !modeloInexistente(e)) throw e;
+      console.warn(`Modelo ${m} indisponível, tentando o próximo.`);
+      ultimo = e;
+    }
   }
+  throw new HttpsError("unavailable", `Nenhum modelo Gemini disponível: ${ultimo && ultimo.message}`);
 }
 
 function parteArquivo(dados) {

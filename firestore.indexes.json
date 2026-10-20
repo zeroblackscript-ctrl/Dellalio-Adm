@@ -1,45 +1,171 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "materialId", "order": "ASCENDING" },
-        { "fieldPath": "criadoEm", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "listaCorteId", "order": "ASCENDING" },
-        { "fieldPath": "criadoEm", "order": "ASCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "movimentacoes",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "clienteNome", "order": "ASCENDING" },
-        { "fieldPath": "criadoEm", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "listas_corte",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "criadoEm", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "pedidos_compra",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "fornecedorId", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" }
-      ]
-    }
-  ],
-  "fieldOverrides": []
+    "indexes":  [
+                    {
+                        "collectionGroup":  "chats",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "participants",
+                                           "arrayConfig":  "CONTAINS"
+                                       },
+                                       {
+                                           "fieldPath":  "lastMessageAt",
+                                           "order":  "DESCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "__name__",
+                                           "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "clients",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "deliveryDate",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "__name__",
+                                           "order":  "ASCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "clients",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "deliveryDate",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "__name__",
+                                           "order":  "ASCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "projects",
+                        "queryScope":  "COLLECTION_GROUP",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "deliveryDate",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "__name__",
+                                           "order":  "ASCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "movimentacoes",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "materialId",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "criadoEm",
+                                           "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "movimentacoes",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "listaCorteId",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "criadoEm",
+                                           "order":  "ASCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "movimentacoes",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "clienteNome",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "criadoEm",
+                                           "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "listas_corte",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "criadoEm",
+                                           "order":  "DESCENDING"
+                                       }
+                                   ]
+                    },
+                    {
+                        "collectionGroup":  "pedidos_compra",
+                        "queryScope":  "COLLECTION",
+                        "fields":  [
+                                       {
+                                           "fieldPath":  "fornecedorId",
+                                           "order":  "ASCENDING"
+                                       },
+                                       {
+                                           "fieldPath":  "status",
+                                           "order":  "ASCENDING"
+                                       }
+                                   ]
+                    }
+                ],
+    "fieldOverrides":  [
+                           {
+                               "collectionGroup":  "logs",
+                               "fieldPath":  "timestamp",
+                               "ttl":  false,
+                               "indexes":  [
+                                               {
+                                                   "order":  "ASCENDING",
+                                                   "queryScope":  "COLLECTION"
+                                               },
+                                               {
+                                                   "order":  "DESCENDING",
+                                                   "queryScope":  "COLLECTION"
+                                               },
+                                               {
+                                                   "arrayConfig":  "CONTAINS",
+                                                   "queryScope":  "COLLECTION"
+                                               },
+                                               {
+                                                   "order":  "DESCENDING",
+                                                   "queryScope":  "COLLECTION_GROUP"
+                                               }
+                                           ]
+                           }
+                       ]
 }
