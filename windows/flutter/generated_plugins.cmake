@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   auto_updater_windows
   cloud_firestore
+  desktop_drop
   file_selector_windows
   firebase_auth
   firebase_core

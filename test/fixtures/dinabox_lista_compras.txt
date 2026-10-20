@@ -1,0 +1,28 @@
+DinaBox - www.dinabox.net
+LISTA DE COMPRAS
+Cliente: Rodrigues                                   Data: 20/10/2026
+Projeto: Cozinha
+Responsável: Marcos
+
+CHAPAS
+Descrição                                   Qtd      Un     Valor
+MDF Branco TX 18mm 2750x1850                6        ch     R$ 312,40
+MDF Louro Freijó 18mm                       11,4     m²     R$ 41,20
+MDP Cinza Cristal 15mm                      2        chapas
+
+FITAS DE BORDA
+Fita de borda branca 22mm                   48,00    m
+Fita de borda Louro Freijó 22mm             36       m
+
+FERRAGENS
+Ref.        Descrição                                Qtd    Un
+DB-35AM     Dobradiça 35mm c/ amortecedor            12     un
+CT-450      Corrediça telescópica 450mm              8      par
+Puxador perfil alumínio                              6      m
+
+INSUMOS
+Parafuso 4x40 Philips                                1      cx
+
+Total de itens: 9
+Custo total estimado: R$ 4.812,50
+Página 1 de 1

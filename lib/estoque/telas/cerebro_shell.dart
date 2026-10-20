@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -6,6 +9,7 @@ import '../../core/theme.dart';
 import '../../core/user_session.dart';
 import '../../screens/login/login_screen.dart';
 import '../../screens/login/meu_usuario_screen.dart';
+import '../importacao/automacao.dart';
 import '../models/models.dart';
 import '../services/consultas.dart';
 import '../services/migracao.dart';
@@ -24,12 +28,32 @@ class CerebroShell extends StatefulWidget {
 
 class _CerebroShellState extends State<CerebroShell> {
   final NavCerebro _nav = NavCerebro();
+  bool _arrastando = false;
 
   @override
   void initState() {
     super.initState();
-    // Converte o estoque antigo uma única vez (flag em config/migracoes).
-    migrarEstoqueAntigo().catchError((_) => 0);
+    // Converte o estoque antigo uma única vez (flag em config/migracoes),
+    // depois começa a vigiar as pastas.
+    migrarEstoqueAntigo()
+        .catchError((_) => 0)
+        .whenComplete(Automacao.instancia.iniciar);
+  }
+
+  Future<void> _soltou(DropDoneDetails d) async {
+    setState(() => _arrastando = false);
+    for (final f in d.files) {
+      final arquivo = File(f.path);
+      if (!Automacao.instancia.vigiaListas.aceita(arquivo.path) &&
+          !f.path.toLowerCase().endsWith('.xml')) {
+        if (mounted) avisar(context, '${f.name}: formato não aceito.', erro: true);
+        continue;
+      }
+      if (mounted) avisar(context, 'Lendo ${f.name}…');
+      final id = await Automacao.instancia.importarArquivo(arquivo);
+      if (!mounted) return;
+      avisar(context, id == null ? '${f.name} já tinha sido importado.' : '${f.name} importado.');
+    }
   }
 
   @override
@@ -44,25 +68,73 @@ class _CerebroShellState extends State<CerebroShell> {
       nav: _nav,
       child: Scaffold(
         backgroundColor: inkPageBg,
-        body: Row(
-          children: [
-            const _BarraLateral(),
-            Expanded(
-              child: ListenableBuilder(
-                listenable: _nav,
-                builder: (context, _) => KeyedSubtree(
-                  key: ValueKey(_nav.secao),
-                  child: _pagina(_nav.secao),
-                ),
+        body: DropTarget(
+          onDragEntered: (_) => setState(() => _arrastando = true),
+          onDragExited: (_) => setState(() => _arrastando = false),
+          onDragDone: _soltou,
+          child: Stack(
+            children: [
+              Row(
+                children: [
+                  const _BarraLateral(),
+                  Expanded(
+                    child: ListenableBuilder(
+                      listenable: _nav,
+                      builder: (context, _) => KeyedSubtree(
+                        key: ValueKey(_nav.secao),
+                        child: _pagina(_nav.secao),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+              if (_arrastando) const _SoltarAqui(),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _pagina(SecaoCerebro s) => _PaginaProvisoria(secao: s);
+}
+
+/// Véu que aparece ao arrastar um arquivo sobre a janela.
+class _SoltarAqui extends StatelessWidget {
+  const _SoltarAqui();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          color: inkPageBg.withValues(alpha: 0.86),
+          alignment: Alignment.center,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 36),
+            decoration: BoxDecoration(
+              color: inkSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: estoqueOuro, width: 1.5),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.file_download_outlined, size: 40, color: estoqueOuro),
+                const SizedBox(height: 12),
+                Text('Solte para importar', style: fraunces(26)),
+                const SizedBox(height: 6),
+                Text(
+                  'Lista do DinaBox (PDF, CSV, XLSX) ou nota fiscal (XML, PDF)',
+                  style: TextStyle(color: panelSlate),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _PaginaProvisoria extends StatelessWidget {
