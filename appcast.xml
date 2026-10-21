@@ -5,6 +5,29 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 2.0.0</title>
+      <description>
+        - Novo Dellalio Estoque: o app passa a ser só controle de estoque
+        - Lista de compras do DinaBox lida sozinha (pasta vigiada, arrastar e soltar ou importar)
+        - Casamento automático com o estoque, reservas por projeto e pedidos de compra por fornecedor
+        - Pedido enviado ao fornecedor pelo WhatsApp em um clique
+        - Entrada automática por nota fiscal (XML, PDF ou foto do celular)
+        - Histórico completo de cada material: o quê, quanto, por quê, para quem, quem e quando
+        - Etiquetas QR para as prateleiras
+      </description>
+      <pubDate>Tue, 20 Oct 2026 21:10:00 -0300</pubDate>
+      <sparkle:version>2.0.0.17</sparkle:version>
+      <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v2.0.0</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v2.0.0/DellalioCerebroADM_Setup_v2.0.0.exe"
+        sparkle:version="2.0.0.17"
+        sparkle:shortVersionString="2.0.0"
+        length="21841195"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 1.4.8</title>
       <description>
         - Correção definitiva: cliente não abria ao clicar (condição de corrida na lista de clientes corrigida com chave estável e ordenação determinística)
