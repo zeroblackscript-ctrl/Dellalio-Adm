@@ -30,6 +30,11 @@ String detalheMov(Movimentacao m) {
     final nf = numeroNota(m.notaFiscalId);
     return ['NF ${nf ?? ''}'.trim(), ?m.fornecedorNome, quando].join(' · ');
   }
+  // Lançamento manual com cliente: o título já mostra para quem, então o
+  // motivo escrito vai aqui embaixo.
+  if (m.origem == OrigemMovimentacao.manual && m.paraQuem != null && m.motivo.isNotEmpty) {
+    return [m.motivo, m.responsavelNome, quando].join(' · ');
+  }
   final origem = switch (m.origem) {
     OrigemMovimentacao.listaCorte => 'Lista de corte',
     OrigemMovimentacao.projetoCortado => 'Produção',
