@@ -5,6 +5,28 @@
     <description>Atualizações do aplicativo Dellalio Cérebro (ADM)</description>
     <language>pt-BR</language>
     <item>
+      <title>Versão 2.1.0</title>
+      <description>
+        - Comprovantes de retirada e de entrada, numerados em sequência
+        - Retirada registra para quem foi entregue o material, com assinatura
+        - Comprovante para imprimir ou salvar em PDF
+        - Nova aba Comprovantes e botões Retirada/Entrada na ficha do material
+        - Histórico mostra quem recebeu e abre o comprovante com um clique
+        - Planilha de movimentações com as colunas Recebido por e Comprovante
+      </description>
+      <pubDate>Fri, 27 Nov 2026 20:30:00 -0300</pubDate>
+      <sparkle:version>2.1.0.18</sparkle:version>
+      <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
+      <sparkle:releaseNotesLink>https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/tag/v2.1.0</sparkle:releaseNotesLink>
+      <sparkle:minimumSystemVersion>10.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/zeroblackscript-ctrl/Dellalio-Adm/releases/download/v2.1.0/DellalioCerebroADM_Setup_v2.1.0.exe"
+        sparkle:version="2.1.0.18"
+        sparkle:shortVersionString="2.1.0"
+        length="22161244"
+        type="application/octet-stream" />
+    </item>
+    <item>
       <title>Versão 2.0.0</title>
       <description>
         - Novo Dellalio Estoque: o app passa a ser só controle de estoque

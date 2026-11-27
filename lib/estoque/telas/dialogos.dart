@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:printing/printing.dart';
 
 import '../../core/theme.dart';
 import '../models/models.dart';
@@ -11,6 +16,8 @@ import '../services/consultas.dart';
 import '../services/estoque_service.dart';
 import '../services/lista_service.dart';
 import '../services/pedido_service.dart';
+import '../ui/comprovante_pdf.dart';
+import '../ui/formatos.dart';
 import '../ui/kit_estoque.dart';
 import '../util/datas.dart';
 import '../util/normalizar.dart';
@@ -829,6 +836,382 @@ Future<void> enviarPedido(BuildContext context, PedidoCompra p) async {
         ? 'Pedido da ${p.fornecedorNome} aberto no WhatsApp e marcado como enviado.'
         : '${p.fornecedorNome} sem WhatsApp cadastrado: a mensagem foi copiada. Cole onde preferir.',
   );
+}
+
+// ========================================================= comprovantes
+
+/// Abre o comprovante (ficha completa, assinatura) com Imprimir e Salvar PDF.
+Future<void> abrirComprovante(BuildContext context, String id) => showDialog(
+  context: context,
+  builder: (_) => _ComprovanteDialogo(id),
+);
+
+class _ComprovanteDialogo extends StatelessWidget {
+  final String id;
+  const _ComprovanteDialogo(this.id);
+
+  Future<void> _salvarPdf(BuildContext context, Comprovante c) async {
+    final caminho = await FilePicker.saveFile(
+      dialogTitle: 'Salvar comprovante',
+      fileName: nomeArquivoComprovante(c),
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    if (caminho == null) return;
+    final destino = caminho.toLowerCase().endsWith('.pdf') ? caminho : '$caminho.pdf';
+    await File(destino).writeAsBytes(await pdfComprovante(c));
+    if (context.mounted) avisar(context, 'Comprovante salvo.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<Comprovante?>(
+      stream: Consultas.instancia.comprovante(id),
+      builder: (context, snap) {
+        final c = snap.data;
+        if (c == null) {
+          return _Moldura(
+            titulo: 'Comprovante',
+            child: snap.hasError ? ErroConsulta(snap.error!) : const Carregando(),
+          );
+        }
+        final retirada = c.tipo == TipoComprovante.retirada;
+        Widget campo(String r, String? v, {bool destaque = false}) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RotuloCaixaAlta(r, cor: panelSlateDim),
+              const SizedBox(height: 3),
+              Text(
+                v == null || v.isEmpty ? '—' : v,
+                style: destaque ? fraunces(20) : TextStyle(color: panelIvory, fontSize: 14),
+              ),
+            ],
+          ),
+        );
+        Widget linha(List<Widget> filhos) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [for (final f in filhos) Expanded(child: f)],
+        );
+        final png = c.assinaturaPng == null ? null : base64Decode(c.assinaturaPng!);
+
+        return _Moldura(
+          titulo: '${c.tipo.titulo} ${rotuloComprovante(c.numero)}',
+          subtitulo: [
+            fmtCompleta(c.criadoEm),
+            if (c.registradoNo != null) 'registrado no ${c.registradoNo}',
+          ].join(' · '),
+          largura: 760,
+          acoes: [
+            BotaoEstoque(rotulo: 'Salvar PDF', icone: Icons.download_outlined, variante: VarianteBotao.fantasma, onPressed: () => _salvarPdf(context, c)),
+            BotaoEstoque(
+              rotulo: 'Imprimir',
+              icone: Icons.print_outlined,
+              variante: VarianteBotao.principal,
+              onPressed: () => Printing.layoutPdf(name: nomeArquivoComprovante(c), onLayout: (_) => pdfComprovante(c)),
+            ),
+          ],
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (retirada) ...[
+                  linha([campo('Entregue a', c.recebedorNome, destaque: true), campo('Função / setor', c.recebedorFuncao), campo('Entregue por', c.responsavelNome)]),
+                  linha([campo('Finalidade', c.motivo), campo('Cliente', c.clienteNome), campo('Projeto / obra', c.projetoNome)]),
+                ] else ...[
+                  linha([campo('Recebido de', c.origemNome, destaque: true), campo('Nota fiscal', c.notaNumero), campo('Conferido por', c.responsavelNome)]),
+                  linha([campo('Motivo', c.motivo), campo('Cliente', c.clienteNome), campo('Projeto / obra', c.projetoNome)]),
+                ],
+                Divider(color: hairlineNavy),
+                const SizedBox(height: 6),
+                RotuloCaixaAlta('Materiais ${retirada ? 'retirados' : 'incluídos'} · ${c.itens.length}', cor: panelSlateDim),
+                const SizedBox(height: 4),
+                for (final (i, it) in c.itens.indexed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(border: Border(top: BorderSide(color: i == 0 ? Colors.transparent : hairlineNavy))),
+                    child: Row(
+                      children: [
+                        SizedBox(width: 26, child: Text('${i + 1}', style: TextStyle(color: panelSlateDim))),
+                        Expanded(
+                          flex: 5,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              NavCerebro.ler(context).abrirMaterial(it.materialId);
+                            },
+                            child: Text(it.materialNome, style: TextStyle(color: panelIvory, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                        Expanded(flex: 2, child: Text(it.local ?? '—', style: TextStyle(color: panelSlate, fontSize: 13))),
+                        Expanded(
+                          flex: 2,
+                          child: Text(
+                            'estoque ${fmtNumero(it.fisicoAntes)} → ${fmtNumero(it.fisicoDepois)}',
+                            style: TextStyle(color: panelSlateDim, fontSize: 12.5, fontFeatures: numerosTabulares),
+                          ),
+                        ),
+                        SizedBox(
+                          width: 90,
+                          child: Text(
+                            '${retirada ? '−' : '+'}${fmtQtd(it.quantidade, it.unidade)}',
+                            textAlign: TextAlign.right,
+                            style: TextStyle(color: retirada ? estoqueFalta : estoqueOk, fontWeight: FontWeight.w700, fontFeatures: numerosTabulares),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Divider(color: hairlineNavy),
+                const SizedBox(height: 6),
+                campo('Observação', c.observacao),
+                if (retirada) ...[
+                  RotuloCaixaAlta('Assinatura de quem recebeu', cor: panelSlateDim),
+                  const SizedBox(height: 6),
+                  png == null
+                      ? Text(
+                          'Não coletada no celular. O PDF sai com a linha em branco para assinar no papel.',
+                          style: TextStyle(color: estoqueAlerta, fontSize: 13),
+                        )
+                      : Container(
+                          height: 90,
+                          padding: const EdgeInsets.all(8),
+                          alignment: Alignment.centerLeft,
+                          decoration: BoxDecoration(color: const Color(0xFFFBF8F1), borderRadius: BorderRadius.circular(10)),
+                          child: Image.memory(png, fit: BoxFit.contain),
+                        ),
+                ],
+                const SizedBox(height: 8),
+                Text('Código ${c.id}', style: TextStyle(color: panelSlateDim, fontSize: 11.5)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Retirada ou entrada pelo painel, com comprovante. [materialId] já entra
+/// na lista (vem da ficha do material).
+Future<void> registrarComprovante(BuildContext context, TipoComprovante tipo, {String? materialId}) async {
+  final c = await showDialog<Comprovante>(
+    context: context,
+    builder: (_) => _RegistrarComprovante(tipo: tipo, materialId: materialId),
+  );
+  if (c != null && context.mounted) {
+    avisar(context, '${c.tipo.rotulo} registrada · ${rotuloComprovante(c.numero)}.');
+    await abrirComprovante(context, c.id);
+  }
+}
+
+class _LinhaRegistro {
+  final String materialId;
+  final TextEditingController qtd = TextEditingController(text: '1');
+  final TextEditingController custo = TextEditingController();
+  _LinhaRegistro(this.materialId);
+}
+
+class _RegistrarComprovante extends StatefulWidget {
+  final TipoComprovante tipo;
+  final String? materialId;
+  const _RegistrarComprovante({required this.tipo, this.materialId});
+  @override
+  State<_RegistrarComprovante> createState() => _RegistrarComprovanteState();
+}
+
+class _RegistrarComprovanteState extends State<_RegistrarComprovante> {
+  static const _finalidades = ['Montagem', 'Produção', 'Assistência', 'Amostra'];
+  static const _motivosEntrada = ['Compra', 'Devolução de obra', 'Sobra de produção', 'Transferência'];
+
+  late final List<_LinhaRegistro> _linhas = [if (widget.materialId != null) _LinhaRegistro(widget.materialId!)];
+  final _recebedor = TextEditingController();
+  final _funcao = TextEditingController();
+  final _origem = TextEditingController();
+  final _nota = TextEditingController();
+  final _cliente = TextEditingController();
+  final _projeto = TextEditingController();
+  late final _motivo = TextEditingController(text: _retirada ? _finalidades.first : _motivosEntrada.first);
+  final _obs = TextEditingController();
+  bool _salvando = false;
+
+  bool get _retirada => widget.tipo == TipoComprovante.retirada;
+
+  @override
+  void dispose() {
+    for (final l in _linhas) {
+      l.qtd.dispose();
+      l.custo.dispose();
+    }
+    for (final c in [_recebedor, _funcao, _origem, _nota, _cliente, _projeto, _motivo, _obs]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<void> _adicionar() async {
+    final id = await escolherMaterial(context, titulo: 'Adicionar material', permitirNovo: false);
+    if (id == null || _linhas.any((l) => l.materialId == id)) return;
+    setState(() => _linhas.add(_LinhaRegistro(id)));
+  }
+
+  Future<void> _salvar() async {
+    final itens = [
+      for (final l in _linhas)
+        if ((_num(l.qtd.text) ?? 0) > 0) ItemPedidoComprovante(l.materialId, _num(l.qtd.text)!, custoUnitario: _num(l.custo.text)),
+    ];
+    final falta = itens.isEmpty
+        ? 'Escolha o material e a quantidade.'
+        : (_retirada && _recebedor.text.trim().isEmpty ? 'Informe para quem foi entregue.' : null);
+    if (falta != null) {
+      avisar(context, falta, erro: true);
+      return;
+    }
+    setState(() => _salvando = true);
+    try {
+      final c = await EstoqueService().registrarComprovante(
+        tipo: widget.tipo,
+        itens: itens,
+        motivo: _motivo.text.trim().isEmpty ? (_retirada ? 'Produção' : 'Compra') : _motivo.text.trim(),
+        recebedorNome: _recebedor.text,
+        recebedorFuncao: _funcao.text,
+        origemNome: _origem.text,
+        notaNumero: _nota.text,
+        clienteNome: _cliente.text,
+        projetoNome: _projeto.text,
+        observacao: _obs.text,
+        registradoNo: 'Cérebro',
+      );
+      if (mounted) Navigator.pop(context, c);
+    } catch (e) {
+      if (mounted) avisar(context, 'Não registrou: $e', erro: true);
+      setState(() => _salvando = false);
+    }
+  }
+
+  Widget _par(Widget a, Widget b) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(children: [Expanded(child: a), const SizedBox(width: 10), Expanded(child: b)]),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final sugestoes = _retirada ? _finalidades : _motivosEntrada;
+    return _Moldura(
+      titulo: _retirada ? 'Registrar retirada' : 'Registrar entrada',
+      subtitulo: _retirada
+          ? 'Sai do estoque com comprovante numerado de quem recebeu.'
+          : 'Entra no estoque com comprovante numerado de onde veio.',
+      largura: 720,
+      acoes: [
+        BotaoEstoque(rotulo: 'Cancelar', variante: VarianteBotao.fantasma, onPressed: () => Navigator.pop(context)),
+        BotaoEstoque(
+          rotulo: _retirada ? 'Registrar retirada' : 'Registrar entrada',
+          icone: Icons.receipt_long_outlined,
+          variante: VarianteBotao.principal,
+          carregando: _salvando,
+          onPressed: _salvar,
+        ),
+      ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            RotuloCaixaAlta(_retirada ? 'O que está saindo' : 'O que está entrando'),
+            const SizedBox(height: 8),
+            StreamBuilder<List<MaterialEstoque>>(
+              stream: Consultas.instancia.materiais(),
+              builder: (context, snap) {
+                final porId = {for (final m in snap.data ?? const <MaterialEstoque>[]) m.id: m};
+                return Column(
+                  children: [
+                    for (final l in _linhas)
+                      if (porId[l.materialId] case final m?)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(m.nome, style: TextStyle(color: panelIvory, fontWeight: FontWeight.w600)),
+                                    Text(
+                                      [m.local ?? 'sem local', 'físico ${fmtQtd(m.estoqueFisico, m.unidade)}', 'disp. ${fmtQtd(m.disponivel, m.unidade)}'].join(' · '),
+                                      style: TextStyle(color: panelSlateDim, fontSize: 12),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(
+                                width: 110,
+                                child: TextField(controller: l.qtd, style: _texto, decoration: _campo('Qtd.', sufixo: m.unidade.sigla)),
+                              ),
+                              if (!_retirada) ...[
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  width: 120,
+                                  child: TextField(controller: l.custo, style: _texto, decoration: _campo('Custo un.', sufixo: 'R\$')),
+                                ),
+                              ],
+                              IconButton(
+                                tooltip: 'Tirar',
+                                onPressed: () => setState(() => _linhas.remove(l)),
+                                icon: Icon(Icons.close, size: 18, color: panelSlate),
+                              ),
+                            ],
+                          ),
+                        ),
+                  ],
+                );
+              },
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: BotaoEstoque(rotulo: 'Adicionar material', icone: Icons.add, pequeno: true, onPressed: _adicionar),
+            ),
+            const SizedBox(height: 18),
+            RotuloCaixaAlta(_retirada ? 'Quem recebeu' : 'De onde veio'),
+            const SizedBox(height: 8),
+            if (_retirada)
+              _par(
+                TextField(controller: _recebedor, style: _texto, textCapitalization: TextCapitalization.words, decoration: _campo('Entregue a (nome)')),
+                TextField(controller: _funcao, style: _texto, textCapitalization: TextCapitalization.words, decoration: _campo('Função / setor')),
+              )
+            else
+              _par(
+                TextField(controller: _origem, style: _texto, textCapitalization: TextCapitalization.words, decoration: _campo('Fornecedor ou pessoa que entregou')),
+                TextField(controller: _nota, style: _texto, decoration: _campo('Nº da nota fiscal')),
+              ),
+            _par(
+              TextField(controller: _cliente, style: _texto, textCapitalization: TextCapitalization.words, decoration: _campo('Cliente')),
+              TextField(controller: _projeto, style: _texto, textCapitalization: TextCapitalization.words, decoration: _campo('Projeto / obra')),
+            ),
+            TextField(controller: _motivo, style: _texto, decoration: _campo(_retirada ? 'Finalidade' : 'Motivo'), onChanged: (_) => setState(() {})),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final s in sugestoes)
+                  ChipFiltro(rotulo: s, ativo: normalizar(_motivo.text) == normalizar(s), onTap: () => setState(() => _motivo.text = s)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(controller: _obs, style: _texto, maxLines: 2, decoration: _campo('Observação')),
+            if (_retirada) ...[
+              const SizedBox(height: 10),
+              Text(
+                'Pelo painel não há assinatura na tela: imprima o comprovante e colete a assinatura no papel.',
+                style: TextStyle(color: panelSlateDim, fontSize: 12.5),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Copia texto pra área de transferência com aviso.

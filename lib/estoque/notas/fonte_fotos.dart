@@ -9,8 +9,11 @@ import 'fonte_notas.dart';
 /// `pendente`). Cada foto é reivindicada numa transação — com dois Cérebros
 /// abertos, só um processa — e entregue como [ArquivoNota].
 class FonteFotosCelular implements FonteNotas {
-  FonteFotosCelular({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
-  final FirebaseFirestore _db;
+  FonteFotosCelular({FirebaseFirestore? db}) : _dbFixo = db;
+  final FirebaseFirestore? _dbFixo;
+
+  /// Só na hora de usar: a prévia das telas cria a automação sem Firebase.
+  FirebaseFirestore get _db => _dbFixo ?? FirebaseFirestore.instance;
 
   final StreamController<ArquivoNota> _saida = StreamController.broadcast();
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;

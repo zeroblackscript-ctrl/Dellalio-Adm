@@ -116,6 +116,33 @@ Future<void> _semear(FakeFirebaseFirestore db) async {
   ]);
   await ana.perda(materialId: 'mdp', quantidade: 1, motivo: 'Chapa empenada');
   await joao.saida(materialId: 'fita', quantidade: 12, motivo: 'Produção', projetoNome: 'Painel TV', clienteNome: 'Souza', origem: OrigemMovimentacao.projetoCortado);
+  await joao.registrarComprovante(
+    tipo: TipoComprovante.retirada,
+    itens: const [ItemPedidoComprovante('louro', 1), ItemPedidoComprovante('fitaLouro', 16), ItemPedidoComprovante('dob', 6)],
+    motivo: 'Montagem',
+    recebedorNome: 'Carlos Souza',
+    recebedorFuncao: 'Montador',
+    clienteNome: 'Almeida',
+    projetoNome: 'Closet',
+    observacao: 'Levou na Strada da empresa',
+    registradoNo: 'Gerenciador',
+  );
+  await ana.registrarComprovante(
+    tipo: TipoComprovante.entrada,
+    itens: const [ItemPedidoComprovante('mdp', 2)],
+    motivo: 'Devolução de obra',
+    origemNome: 'Equipe de montagem',
+    clienteNome: 'Pereira',
+    registradoNo: 'Cérebro',
+  );
+  await ana.registrarComprovante(
+    tipo: TipoComprovante.retirada,
+    itens: const [ItemPedidoComprovante('paraf', 1)],
+    motivo: 'Assistência',
+    recebedorNome: 'Rafael Lima',
+    recebedorFuncao: 'Instalador',
+    clienteNome: 'Souza',
+  );
 }
 
 Future<void> _fontesLocais() async {
@@ -207,6 +234,21 @@ void main() {
     await _foto(tester, 'c6-listas', shell(SecaoCerebro.listas));
     await _foto(tester, 'c7-movimentacoes', shell(SecaoCerebro.movimentacoes));
     await _foto(tester, 'c8-configuracoes', shell(SecaoCerebro.configuracoes));
+    await _foto(tester, 'c10-comprovantes', shell(SecaoCerebro.comprovantes));
+    await _foto(tester, 'c11-ficha-com-comprovante', shell(SecaoCerebro.materiais, material: 'louro'));
+    // Diálogo do comprovante: abre a partir da tabela e fotografa por cima.
+    await _foto(tester, 'c12-comprovante-dialogo', shell(SecaoCerebro.comprovantes));
+    await tester.tap(find.text('00001'));
+    for (var i = 0; i < 8; i++) {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 30)));
+      await tester.pump(const Duration(milliseconds: 250));
+    }
+    await tester.runAsync(() async {
+      final boundary = tester.renderObject<RenderRepaintBoundary>(find.byType(RepaintBoundary).first);
+      final img = await boundary.toImage();
+      final png = await img.toByteData(format: ui.ImageByteFormat.png);
+      File('$_saida/c12-comprovante-dialogo.png').writeAsBytesSync(png!.buffer.asUint8List());
+    });
     await _foto(tester, 'c9-conferencia-claro', shell(SecaoCerebro.listas, lista: 'rodrigues'), escuro: false);
     await tester.pumpWidget(const SizedBox());
   }, skip: _saida == null || _fontes == null);

@@ -1,4 +1,5 @@
 export 'aviso.dart';
+export 'comprovante.dart';
 export 'enums.dart';
 export 'fornecedor.dart';
 export 'lista_corte.dart';

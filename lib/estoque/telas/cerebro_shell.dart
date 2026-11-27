@@ -16,6 +16,7 @@ import '../services/migracao.dart';
 import '../services/responsavel.dart';
 import '../ui/kit_estoque.dart';
 import '../services/cadastro_service.dart';
+import 'comprovantes_tela.dart';
 import 'configuracoes_tela.dart';
 import 'listas_tela.dart';
 import 'materiais_tela.dart';
@@ -150,6 +151,7 @@ class _CerebroShellState extends State<CerebroShell> {
     SecaoCerebro.visaoGeral => const VisaoGeralTela(),
     SecaoCerebro.materiais => const MateriaisTela(),
     SecaoCerebro.movimentacoes => const MovimentacoesTela(),
+    SecaoCerebro.comprovantes => const ComprovantesTela(),
     SecaoCerebro.listas => const ListasTela(),
     SecaoCerebro.pedidos => const PedidosTela(),
     SecaoCerebro.configuracoes => const ConfiguracoesTela(),

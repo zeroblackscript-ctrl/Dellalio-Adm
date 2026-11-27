@@ -24,6 +24,11 @@ class Movimentacao {
   final String? listaCorteId;
   final String? notaFiscalId;
   final String? pedidoId;
+
+  /// Retirada com comprovante: quem recebeu o material na mão.
+  final String? recebedorNome;
+  final String? comprovanteId;
+  final int? comprovanteNumero;
   final OrigemMovimentacao origem;
   final String responsavelId;
   final String responsavelNome;
@@ -48,6 +53,9 @@ class Movimentacao {
     this.listaCorteId,
     this.notaFiscalId,
     this.pedidoId,
+    this.recebedorNome,
+    this.comprovanteId,
+    this.comprovanteNumero,
     required this.origem,
     required this.responsavelId,
     required this.responsavelNome,
@@ -90,6 +98,9 @@ class Movimentacao {
       listaCorteId: lerTexto(d['listaCorteId']),
       notaFiscalId: lerTexto(d['notaFiscalId']),
       pedidoId: lerTexto(d['pedidoId']),
+      recebedorNome: lerTexto(d['recebedorNome']),
+      comprovanteId: lerTexto(d['comprovanteId']),
+      comprovanteNumero: lerNumOuNulo(d['comprovanteNumero'])?.toInt(),
       origem: OrigemMovimentacao.fromName(d['origem'] as String?),
       responsavelId: lerTexto(d['responsavelId']) ?? 'sistema',
       responsavelNome: lerTexto(d['responsavelNome']) ?? 'Sistema',
@@ -119,6 +130,9 @@ class Movimentacao {
     'listaCorteId': listaCorteId,
     'notaFiscalId': notaFiscalId,
     'pedidoId': pedidoId,
+    'recebedorNome': recebedorNome,
+    'comprovanteId': comprovanteId,
+    'comprovanteNumero': comprovanteNumero,
     'origem': origem.name,
     'responsavelId': responsavelId,
     'responsavelNome': responsavelNome,
@@ -150,6 +164,9 @@ class Movimentacao {
       listaCorteId: listaCorteId,
       notaFiscalId: notaFiscalId,
       pedidoId: pedidoId,
+      recebedorNome: recebedorNome,
+      comprovanteId: comprovanteId,
+      comprovanteNumero: comprovanteNumero,
       origem: origem,
       responsavelId: responsavelId,
       responsavelNome: responsavelNome,

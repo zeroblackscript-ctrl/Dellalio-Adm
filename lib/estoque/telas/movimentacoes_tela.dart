@@ -74,7 +74,7 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
     if (_materialId != null && m.materialId != _materialId) return false;
     if (_material.isNotEmpty && !normalizar(m.materialNome).contains(_material)) return false;
     if (_cliente.isNotEmpty) {
-      final quem = normalizar('${m.clienteNome ?? ''} ${m.projetoNome ?? ''}');
+      final quem = normalizar('${m.clienteNome ?? ''} ${m.projetoNome ?? ''} ${m.recebedorNome ?? ''}');
       if (!quem.contains(normalizar(_cliente))) return false;
     }
     return true;
@@ -87,7 +87,7 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
 
   Future<void> _exportar(List<Movimentacao> movs) async {
     final linhas = [
-      ['Data', 'Tipo', 'Material', 'Quantidade', 'Unidade', 'Motivo', 'Cliente', 'Projeto', 'Origem', 'Documento', 'Responsável', 'Físico antes', 'Físico depois', 'Reservado antes', 'Reservado depois'],
+      ['Data', 'Tipo', 'Material', 'Quantidade', 'Unidade', 'Motivo', 'Cliente', 'Projeto', 'Recebido por', 'Comprovante', 'Origem', 'Documento', 'Responsável', 'Físico antes', 'Físico depois', 'Reservado antes', 'Reservado depois'],
       for (final m in movs)
         [
           fmtCompleta(m.criadoEm),
@@ -98,6 +98,8 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
           m.motivo,
           m.clienteNome ?? '',
           m.projetoNome ?? '',
+          m.recebedorNome ?? '',
+          m.comprovanteNumero?.toString().padLeft(5, '0') ?? '',
           m.origem.rotulo,
           m.listaCorteId ?? (m.notaFiscalId != null ? 'NF ${numeroNota(m.notaFiscalId)}' : m.pedidoId ?? ''),
           m.responsavelNome,
@@ -123,7 +125,9 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
 
   void _abrirOrigem(Movimentacao m) {
     final nav = NavCerebro.ler(context);
-    if (m.listaCorteId != null) {
+    if (m.comprovanteId != null) {
+      abrirComprovante(context, m.comprovanteId!);
+    } else if (m.listaCorteId != null) {
       nav.abrirLista(m.listaCorteId!);
     } else if (m.notaFiscalId != null) {
       abrirNota(context, m.notaFiscalId!);
@@ -217,7 +221,7 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
           }),
         ),
         BuscaEstoque(
-          dica: 'Cliente / projeto',
+          dica: 'Cliente / projeto / pessoa',
           largura: 200,
           controller: _clienteCtl,
           onChanged: (v) => setState(() => _cliente = v),
@@ -278,24 +282,39 @@ class _MovimentacoesTelaState extends State<MovimentacoesTela> {
                     ),
                     Expanded(
                       flex: flex[4],
-                      child: m.clienteNome == null && m.projetoNome == null
-                          ? Text(m.motivo, style: TextStyle(color: panelSlate, fontSize: 13))
-                          : InkWell(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (m.recebedorNome != null)
+                            InkWell(
+                              onTap: () => _filtrarCliente(m.recebedorNome!),
+                              child: Text('entregue a ${m.recebedorNome}', style: TextStyle(color: panelIvory, fontSize: 13, fontWeight: FontWeight.w600)),
+                            ),
+                          if (m.clienteNome == null && m.projetoNome == null)
+                            Text(m.motivo, style: TextStyle(color: panelSlate, fontSize: 13))
+                          else
+                            InkWell(
                               onTap: () => _filtrarCliente(m.clienteNome ?? m.projetoNome!),
                               child: Text(
                                 m.paraQuem!,
                                 style: TextStyle(color: estoqueOuro, fontSize: 13, decoration: TextDecoration.underline, decorationColor: estoqueOuro.withValues(alpha: 0.4)),
                               ),
                             ),
+                        ],
+                      ),
                     ),
                     Expanded(
                       flex: flex[5],
                       child: InkWell(
                         onTap: () => _abrirOrigem(m),
                         child: Text(
-                          m.notaFiscalId != null ? 'NF ${numeroNota(m.notaFiscalId) ?? ''}' : m.origem.rotulo,
+                          m.comprovanteNumero != null
+                              ? 'Comprov. ${rotuloComprovante(m.comprovanteNumero)}'
+                              : m.notaFiscalId != null
+                              ? 'NF ${numeroNota(m.notaFiscalId) ?? ''}'
+                              : m.origem.rotulo,
                           style: TextStyle(
-                            color: m.listaCorteId != null || m.notaFiscalId != null || m.pedidoId != null ? estoqueOuro : panelSlate,
+                            color: m.comprovanteId != null || m.listaCorteId != null || m.notaFiscalId != null || m.pedidoId != null ? estoqueOuro : panelSlate,
                             fontSize: 13,
                           ),
                         ),

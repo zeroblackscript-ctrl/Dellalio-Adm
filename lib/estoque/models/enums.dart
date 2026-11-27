@@ -75,6 +75,21 @@ enum TipoMovimentacao {
       _porNome(values, nome, TipoMovimentacao.ajuste);
 }
 
+/// Ficha numerada que acompanha a retirada (quem recebeu) ou a entrada
+/// (de onde veio) de um ou mais materiais.
+enum TipoComprovante {
+  retirada('Retirada', 'Comprovante de retirada', TipoMovimentacao.saida),
+  entrada('Entrada', 'Comprovante de entrada', TipoMovimentacao.entrada);
+
+  const TipoComprovante(this.rotulo, this.titulo, this.movimentacao);
+  final String rotulo;
+  final String titulo;
+  final TipoMovimentacao movimentacao;
+
+  static TipoComprovante fromName(String? nome) =>
+      _porNome(values, nome, TipoComprovante.retirada);
+}
+
 enum OrigemMovimentacao {
   listaCorte('Lista de corte'),
   notaFiscal('Nota fiscal'),

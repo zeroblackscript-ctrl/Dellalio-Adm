@@ -441,6 +441,19 @@ class _FichaMaterialState extends State<FichaMaterial> {
             spacing: 8,
             runSpacing: 8,
             children: [
+              BotaoEstoque(
+                rotulo: 'Retirada',
+                icone: Icons.outbox_outlined,
+                variante: VarianteBotao.principal,
+                pequeno: true,
+                onPressed: () => registrarComprovante(context, TipoComprovante.retirada, materialId: m.id),
+              ),
+              BotaoEstoque(
+                rotulo: 'Entrada',
+                icone: Icons.move_to_inbox_outlined,
+                pequeno: true,
+                onPressed: () => registrarComprovante(context, TipoComprovante.entrada, materialId: m.id),
+              ),
               BotaoEstoque(rotulo: 'Ajustar saldo', pequeno: true, onPressed: () => ajustarSaldo(context, m)),
               BotaoEstoque(rotulo: 'Editar', variante: VarianteBotao.fantasma, pequeno: true, onPressed: () => editarMaterial(context, m: m)),
               BotaoEstoque(rotulo: 'Etiqueta QR', variante: VarianteBotao.fantasma, pequeno: true, onPressed: () => imprimirEtiquetas([m])),
@@ -488,13 +501,16 @@ class _FichaMaterialState extends State<FichaMaterial> {
                     Cascata(
                       key: ValueKey(mv.id),
                       indice: i,
-                      child: ItemLinhaTempo(
-                        cor: corTipoMov(mv.tipo),
-                        titulo: tituloMov(mv),
-                        quantidade: qtdMov(mv),
-                        detalhe: detalheMov(mv),
-                        ultimo: i == movs.length - 1,
-                        tituloColorido: mv.tipo != TipoMovimentacao.perda && mv.tipo != TipoMovimentacao.ajuste,
+                      child: InkWell(
+                        onTap: mv.comprovanteId == null ? null : () => abrirComprovante(context, mv.comprovanteId!),
+                        child: ItemLinhaTempo(
+                          cor: corTipoMov(mv.tipo),
+                          titulo: tituloMov(mv),
+                          quantidade: qtdMov(mv),
+                          detalhe: detalheMov(mv),
+                          ultimo: i == movs.length - 1,
+                          tituloColorido: mv.tipo != TipoMovimentacao.perda && mv.tipo != TipoMovimentacao.ajuste,
+                        ),
                       ),
                     ),
                   if (movs.length >= _limite)

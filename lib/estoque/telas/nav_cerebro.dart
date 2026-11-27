@@ -4,6 +4,7 @@ enum SecaoCerebro {
   visaoGeral('Visão geral', Icons.home_outlined),
   materiais('Materiais', Icons.inventory_2_outlined),
   movimentacoes('Movimentações', Icons.swap_horiz),
+  comprovantes('Comprovantes', Icons.receipt_long_outlined),
   listas('Listas de corte', Icons.description_outlined),
   pedidos('Pedidos', Icons.shopping_cart_outlined),
   configuracoes('Configurações', Icons.settings_outlined);

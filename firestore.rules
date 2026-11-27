@@ -19,11 +19,18 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
 
-    // Regras se somam (qualquer `allow` que case libera), então a exceção de
-    // `movimentacoes` precisa ficar aqui também.
+    // Comprovante de retirada/entrada: é a prova de quem recebeu, então
+    // também nasce e nunca muda.
+    match /comprovantes/{id} {
+      allow read: if true;
+      allow create: if request.auth != null;
+    }
+
+    // Regras se somam (qualquer `allow` que case libera), então as exceções
+    // de `movimentacoes` e `comprovantes` precisam ficar aqui também.
     match /{colecao}/{documento=**} {
       allow read: if true;
-      allow write: if colecao != 'movimentacoes';
+      allow write: if colecao != 'movimentacoes' && colecao != 'comprovantes';
     }
   }
 }

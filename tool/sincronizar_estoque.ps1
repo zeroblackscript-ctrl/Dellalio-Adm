@@ -12,6 +12,7 @@ $alvo = Join-Path $Destino 'lib\estoque'
 
 $arquivos = @(
   'models\aviso.dart',
+  'models\comprovante.dart',
   'models\enums.dart',
   'models\fornecedor.dart',
   'models\leitura.dart',
@@ -32,7 +33,8 @@ $arquivos = @(
   'services\reserva_service.dart',
   'services\responsavel.dart',
   'services\saldo.dart',
-  'ui\formatos.dart'
+  'ui\formatos.dart',
+  'ui\comprovante_pdf.dart'
 )
 
 $aviso = "// COPIA do Cerebro (Dellalio Moveis Planejados/lib/estoque). Nao edite aqui:`n// edite la e rode tool/sincronizar_estoque.ps1.`n"

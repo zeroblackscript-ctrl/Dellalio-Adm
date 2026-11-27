@@ -14,8 +14,14 @@ String? numeroNota(String? notaId) {
   return partes.length > 1 ? partes.last : null;
 }
 
-/// Título do histórico: "Saída · Painel TV Souza", "Entrada · Compra".
+/// "Nº 00042".
+String rotuloComprovante(int? numero) =>
+    numero == null ? '' : 'Nº ${numero.toString().padLeft(5, '0')}';
+
+/// Título do histórico: "Saída · Painel TV Souza", "Entrada · Compra",
+/// "Saída · entregue a Carlos".
 String tituloMov(Movimentacao m) {
+  if (m.recebedorNome != null) return '${m.tipo.rotulo} · entregue a ${m.recebedorNome}';
   final quem = m.tipo == TipoMovimentacao.entrada || m.tipo == TipoMovimentacao.perda ||
           m.tipo == TipoMovimentacao.ajuste
       ? m.motivo
@@ -29,6 +35,15 @@ String detalheMov(Movimentacao m) {
   if (m.notaFiscalId != null) {
     final nf = numeroNota(m.notaFiscalId);
     return ['NF ${nf ?? ''}'.trim(), ?m.fornecedorNome, quando].join(' · ');
+  }
+  // Com comprovante: o número da ficha, para quem/de onde e quem registrou.
+  if (m.comprovanteNumero != null) {
+    return [
+      rotuloComprovante(m.comprovanteNumero),
+      if (m.tipo == TipoMovimentacao.entrada) m.fornecedorNome ?? m.motivo else m.paraQuem ?? m.motivo,
+      m.responsavelNome,
+      quando,
+    ].where((s) => s.isNotEmpty).join(' · ');
   }
   // Lançamento manual com cliente: o título já mostra para quem, então o
   // motivo escrito vai aqui embaixo.
@@ -53,10 +68,22 @@ String resumoMov(Movimentacao m) {
   if (m.notaFiscalId != null) {
     return ['NF ${numeroNota(m.notaFiscalId) ?? ''}'.trim(), ?m.fornecedorNome].join(' · ');
   }
+  if (m.recebedorNome != null) {
+    return ['entregue a ${m.recebedorNome}', ?m.paraQuem, m.responsavelNome].join(' · ');
+  }
   final primeiro = m.tipo == TipoMovimentacao.perda || m.tipo == TipoMovimentacao.ajuste
       ? m.motivo
       : (m.paraQuem ?? m.motivo);
   return [primeiro, m.responsavelNome].where((s) => s.isNotEmpty).join(' · ');
+}
+
+/// Resumo dos itens do comprovante: "MDF Branco 18mm (3 ch) + 2 itens".
+String resumoItens(Comprovante c) {
+  if (c.itens.isEmpty) return '';
+  final p = c.itens.first;
+  final primeiro = '${p.materialNome} (${fmtQtd(p.quantidade, p.unidade)})';
+  final resto = c.itens.length - 1;
+  return resto == 0 ? primeiro : '$primeiro + $resto ${resto == 1 ? 'item' : 'itens'}';
 }
 
 /// Quantidade com sinal do histórico ("−2 ch", "+5 ch", "3 ch" na reserva).

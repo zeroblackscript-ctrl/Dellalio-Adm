@@ -112,6 +112,24 @@ class Consultas {
       .snapshots()
       .map((s) => s.docs.map(Movimentacao.fromFirestore).toList());
 
+  /// Comprovantes de retirada/entrada, mais novos primeiro.
+  Stream<List<Comprovante>> comprovantes({DateTime? desde, int limite = 500}) {
+    Query<Map<String, dynamic>> q = _db.collection('comprovantes');
+    if (desde != null) q = q.where('criadoEm', isGreaterThanOrEqualTo: Timestamp.fromDate(desde));
+    return q
+        .orderBy('criadoEm', descending: true)
+        .limit(limite)
+        .snapshots()
+        // O número é sequencial: desempata registros no mesmo segundo.
+        .map((s) => s.docs.map(Comprovante.fromFirestore).toList()..sort((a, b) => b.numero.compareTo(a.numero)));
+  }
+
+  Stream<Comprovante?> comprovante(String id) => _db
+      .collection('comprovantes')
+      .doc(id)
+      .snapshots()
+      .map((d) => d.exists ? Comprovante.fromFirestore(d) : null);
+
   Stream<int> avisosNaoLidos() => _db
       .collection('avisos')
       .where('lido', isEqualTo: false)
